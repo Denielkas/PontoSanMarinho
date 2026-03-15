@@ -1,0 +1,169 @@
+.batida {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: url("../../assets/logo/hotel.jpg") center/cover no-repeat fixed;
+}
+
+.batida-container {
+  width: 100%;
+  max-width: 500px; /* aumentei um pouco */
+  margin: 40px auto;
+  text-align: center;
+  color: white;
+}
+
+.botoes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+  padding: 0 20px;
+}
+
+/* 🔥 BOTÕES MAIS QUADRADOS E MAIORES */
+.btn {
+  height: 200px;                 /* aumentei */
+  font-size: 30px;
+  font-weight: bold;
+
+  border-radius: 12px;           /* 🔥 mais quadrado */
+  color: white;
+  border: none;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;        /* ícone em cima */
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  transition: transform 0.15s ease, box-shadow 0.15s;
+}
+
+/* Ícone maior */
+.btn .icon {
+  font-size: 55px;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+/* CORES */
+.btn.entrada   { background: #4caf50; }
+.btn.intervalo { background: #ff9800; }
+.btn.retorno   { background: #2196f3; }
+.btn.saida     { background: #f44336; }
+
+/* 🔥 MODAL DE CONFIRMAÇÃO */
+.modal-ponto {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-box {
+  background: #ffffffdd;
+  padding: 30px 45px;
+  border-radius: 18px;
+  text-align: center;
+  color: #000;
+  animation: scaleIn 0.25s ease;
+}
+
+.modal-icon {
+  font-size: 60px;
+  color: #2ecc71;
+  margin-bottom: 10px;
+}
+
+.modal-box h3 {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.modal-box p {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* 🔥 ANIMAÇÕES */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.6); }
+  to { transform: scale(1); }
+}
+
+
+
+/* 🔥 TELAS MÉDIAS (600–800px) — botões gigantes */
+@media (min-width: 600px) and (max-width: 800px) {
+
+  .batida-container h2{
+     font-size: 35px;
+  }
+
+  .batida-container p{
+    font-size: 25px;
+  }
+
+  .batida-container {
+    max-width: 600px;
+  }
+
+  .btn {
+    height: 330px;         /* MAIS QUADRADO E MAIOR */
+    font-size: 34px;
+    border-radius: 14px;
+  }
+
+  .btn .icon {
+    font-size: 70px;
+  }
+
+  .botoes {
+    gap: 35px;
+    margin-top: 8vh;
+  }
+}
+
+/* 🔥 MOBILE */
+@media (max-width: 600px) {
+  .botoes {
+    grid-template-columns: 1fr;
+  }
+
+  .btn {
+    height: 200px;
+    font-size: 28px;
+    border-radius: 16px;
+  }
+
+  .btn .icon {
+    font-size: 50px;
+  }
+}
+
+
+.btn.disabled,
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: grayscale(20%);
+}
+
+.btn.disabled:hover,
+.btn:disabled:hover {
+  transform: none !important;
+}

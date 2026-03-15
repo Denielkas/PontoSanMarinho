@@ -1,0 +1,260 @@
+/* ============================
+   CONTAINER
+============================ */
+.bhoras-container {
+  padding: 25px;
+  font-family: "Inter", sans-serif;
+  color: #e2e8f0;
+}
+
+/* ============================
+   TÍTULO
+============================ */
+.bhoras-title {
+  color: #0d6efd;
+  font-size: 28px;
+  margin-bottom: 22px;
+  font-weight: 700;
+}
+
+/* ============================
+   FILTROS
+============================ */
+.bhoras-filtros {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+}
+
+.bhoras-select {
+  flex: 1;
+  min-width: 180px;
+
+  padding: 12px 16px;
+  border-radius: 10px;
+
+  border: 2px solid rgba(255,255,255,0.15);
+
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+
+  font-size: 16px;
+  outline: none;
+  transition: 0.2s ease;
+  appearance: none;
+
+  background-image: url("data:image/svg+xml,%3Csvg fill='%230d6efd' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 20px;
+  padding-right: 45px;
+}
+
+.bhoras-select:focus {
+  border-color: #0d6efd;
+  background: rgba(255,255,255,0.15);
+  box-shadow: 0 0 6px rgba(13,110,253,.55);
+}
+
+.bhoras-select option {
+  background-color: #0f172a;
+  color: white;
+}
+
+/* ============================
+   BOTÕES
+============================ */
+.bhoras-btn {
+  padding: 12px 22px;
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.bhoras-btn:hover {
+  background: #0b57d1;
+}
+
+.bhoras-btn-salvar {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+/* ============================
+   TABELA
+============================ */
+.bhoras-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.bhoras-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0f172a;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bhoras-table th {
+  background: #1e293b;
+  padding: 12px;
+  color: #0d6efd;
+  font-weight: 600;
+  text-align: center;
+}
+
+.bhoras-table td {
+  padding: 12px;
+  color: #e2e8f0;
+  border-top: 1px solid #1e293b;
+  text-align: center;
+}
+
+.bhoras-table tr:hover {
+  background: #162033;
+}
+
+/* ============================
+   INPUTS
+============================ */
+.bhoras-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.bhoras-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 6px rgba(13,110,253,.45);
+  background: rgba(255,255,255,0.12);
+}
+
+.bhoras-input::placeholder {
+  color: #94a3b8;
+}
+
+/* ============================
+   SALDO POSITIVO / NEGATIVO
+============================ */
+.bhoras-saldo-positivo {
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.bhoras-saldo-negativo {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* ============================
+   SEM DADOS
+============================ */
+.bhoras-sem-dados {
+  text-align: center;
+  color: #94a3b8;
+  padding: 18px;
+}
+
+/* ============================
+   RESPONSIVO
+============================ */
+@media (max-width:768px) {
+  .bhoras-filtros {
+    flex-direction: column;
+  }
+
+  .bhoras-select,
+  .bhoras-btn {
+    width: 100%;
+  }
+}
+
+.modal-ponto {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-box {
+  background: #ffffffdd;
+  padding: 30px 45px;
+  border-radius: 18px;
+  text-align: center;
+  color: #000;
+  animation: scaleIn 0.25s ease;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.modal-box-erro {
+  background: rgba(255, 240, 240, 0.96);
+}
+
+.modal-icon {
+  font-size: 60px;
+  color: #2ecc71;
+  margin-bottom: 10px;
+}
+
+.modal-icon-erro {
+  color: #e74c3c;
+}
+
+.modal-box h3 {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.modal-box p {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.modal-icon {
+  font-size: 60px;
+  color: #2ecc71;
+  margin-bottom: 10px;
+}
+
+.modal-icon-erro {
+  font-size: 60px;
+  color: #e74c3c;
+  margin-bottom: 10px;
+}

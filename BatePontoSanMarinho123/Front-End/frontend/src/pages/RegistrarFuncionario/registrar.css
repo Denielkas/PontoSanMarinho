@@ -1,0 +1,253 @@
+/* CONTAINER CENTRAL */
+.regPage {
+  max-width: 900px;
+  margin: auto;
+  padding: 30px;
+  font-family: system-ui, Arial;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  border-radius: 14px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+
+/* TÍTULO */
+.regTitle {
+  text-align: center;
+  margin-bottom: -5px;
+  margin-top: -5px;
+  font-weight: 700;
+  font-size: 26px;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(0,0,0,.4);
+}
+
+/* FORM GRID */
+.regForm {
+  display: grid;
+  gap: 20px;
+}
+
+/* LABELS */
+.regForm label {
+  font-weight: 600;
+  margin-bottom: 2px;
+  display: block;
+}
+
+/* CAMPOS */
+.regForm input {
+  padding: 12px 14px;
+  border-radius: 10px;
+
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+
+  color: #fff;
+  font-size: 16px;
+
+  transition: 0.2s;
+}
+
+.inputIguais {
+  width: 92%;
+}
+
+.inputDiferente {
+   width: 96%;
+}
+
+
+.regForm input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  background: rgba(255,255,255,0.18);
+}
+
+/* GRID 2 COLUNAS */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+/* BOTÃO PRINCIPAL */
+.regButton {
+  background: #0d6efd;
+  border: none;
+  padding: 14px 16px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 17px;
+  cursor: pointer;
+  margin-top: 1px;
+
+  transition: 0.2s;
+}
+
+.regButton:hover {
+  background: #0b5ed7;
+}
+
+.regButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* MENSAGEM */
+.regMsg {
+  margin-top: 16px;
+  font-size: 15px;
+  text-align: center;
+  min-height: 20px;
+  color: #fff;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+
+  .regPage {
+    margin: 20px;
+    padding: 20px;
+  }
+}
+
+
+/* Remove estilo padrão */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(45%) sepia(97%) saturate(4000%) hue-rotate(200deg)
+    brightness(100%) contrast(90%);
+  opacity: 1;
+}
+
+/* Ajuste fino para Firefox (fallback) */
+input[type="time"] {
+  color-scheme: dark;
+}
+
+/* ícone dentro do input quando estiver em hover/focus */
+input[type="time"]:hover::-webkit-calendar-picker-indicator,
+input[type="time"]:focus::-webkit-calendar-picker-indicator {
+  filter: invert(52%) sepia(100%) saturate(4500%) hue-rotate(200deg)
+    brightness(110%) contrast(100%);
+}
+
+/* SELECT estilizado igual aos inputs */
+.regForm select {
+  padding: 12px 14px;
+  border-radius: 10px;
+
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(4px);
+
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+
+  width: 100%;
+  transition: 0.2s;
+}
+
+/* Ao abrir o select */
+.regForm select:focus {
+  outline: none;
+  border-color: #0d6efd;
+  background: rgba(255,255,255,0.18);
+}
+
+/* Estilo das opções do select */
+.regForm select option {
+  background: #0b0f19;
+  color: #fff;
+  padding: 10px;
+}
+
+/* Placeholder da primeira opção */
+.regForm select option[value=""] {
+  color: #bbbbbb;
+}
+
+/* Setinha do select (Chrome) */
+.regForm select::-ms-expand {
+  display: none;
+}
+
+.regForm select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='20' width='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 20,0 10,12'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+}
+
+.modal-ponto {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-box {
+  background: #ffffffdd;
+  padding: 30px 45px;
+  border-radius: 18px;
+  text-align: center;
+  color: #000;
+  animation: scaleIn 0.25s ease;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.modal-box-erro {
+  background: rgba(255, 240, 240, 0.96);
+}
+
+.modal-icon {
+  font-size: 60px;
+  color: #2ecc71;
+  margin-bottom: 10px;
+}
+
+.modal-icon-erro {
+  color: #e74c3c;
+}
+
+.modal-box h3 {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.modal-box p {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}

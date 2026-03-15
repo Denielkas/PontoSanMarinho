@@ -1,0 +1,319 @@
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../../services/api";
+import "./listar.css";
+
+const onlyDigits = (v = "") => String(v).replace(/\D+/g, "");
+
+const formatCPF = (v = "") => {
+  const s = onlyDigits(v);
+  if (s.length <= 3) return s;
+  if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3, 6)}`;
+  if (s.length <= 9)
+    return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}`;
+  return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9, 11)}`;
+};
+
+export default function ListarFuncionarios() {
+  const navigate = useNavigate();
+  const [lista, setLista] = useState([]);
+  const [msg, setMsg] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  const [funcoes, setFuncoes] = useState([]);
+
+  const [form, setForm] = useState({
+    nome: "",
+    cpf: "",
+    chegada: "",
+    intervalo_inicio: "",
+    intervalo_fim: "",
+    saida: "",
+    funcao_id: "",
+    funcao_nome: "",
+  });
+
+  const [saving, setSaving] = useState(false);
+
+  const carregar = async () => {
+    setMsg("Carregando...");
+    try {
+      const { data } = await api.get("/funcionarios");
+      setLista([...data].sort((a, b) => a.id - b.id));
+      setMsg("");
+    } catch (err) {
+      setMsg(err.response?.data?.error || "Erro ao carregar");
+    }
+  };
+
+  const carregarFuncoes = async () => {
+    try {
+      const { data } = await api.get("/funcoes");
+      setFuncoes(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    carregar();
+    carregarFuncoes();
+  }, []);
+
+  const total = useMemo(() => lista.length, [lista]);
+
+  const abrirModal = (f) => {
+    setEditing(f);
+
+    setForm({
+      nome: f.nome,
+      cpf: formatCPF(f.cpf),
+      chegada: (f.chegada || "").slice(0, 5),
+      intervalo_inicio: (f.intervalo_inicio || "").slice(0, 5),
+      intervalo_fim: (f.intervalo_fim || "").slice(0, 5),
+      saida: (f.saida || "").slice(0, 5),
+      funcao_id: f.funcao_id ? String(f.funcao_id) : "",
+      funcao_nome: "",
+    });
+
+    setOpen(true);
+  };
+
+  const fecharModal = () => {
+    setOpen(false);
+    setEditing(null);
+  };
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+
+    setForm((old) => ({
+      ...old,
+      [name]: name === "cpf" ? formatCPF(value) : value,
+      ...(name === "funcao_id" && value !== "outro"
+        ? { funcao_nome: "" }
+        : {}),
+    }));
+  };
+
+  /* 🔥 FUNÇÃO CORRIGIDA */
+  const salvarAlteracoes = async () => {
+    if (!editing) return;
+
+    setSaving(true);
+
+    try {
+      const payload = {
+        nome: form.nome,
+        cpf: onlyDigits(form.cpf),
+        chegada: form.chegada,
+        intervalo_inicio: form.intervalo_inicio,
+        intervalo_fim: form.intervalo_fim,
+        saida: form.saida,
+        funcao_id:
+          form.funcao_id === "outro" || !form.funcao_id
+            ? null
+            : Number(form.funcao_id),
+        funcao_nome:
+          form.funcao_id === "outro" ? form.funcao_nome : null,
+      };
+
+      await api.put(`/funcionarios/${editing.id}`, payload);
+
+      /* 🔥 ATUALIZA A TABELA IMEDIATAMENTE */
+      setLista((old) =>
+        old.map((item) =>
+          item.id === editing.id
+            ? {
+                ...item,
+                nome: form.nome,
+                cpf: onlyDigits(form.cpf),
+                chegada: form.chegada,
+                intervalo_inicio: form.intervalo_inicio,
+                intervalo_fim: form.intervalo_fim,
+                saida: form.saida,
+                funcao_id: payload.funcao_id ?? item.funcao_id,
+                funcao_nome:
+                  form.funcao_id === "outro"
+                    ? form.funcao_nome
+                    : funcoes.find(
+                        (f) => f.id === Number(form.funcao_id)
+                      )?.nome || item.funcao_nome,
+              }
+            : item
+        )
+      );
+
+      await carregarFuncoes();
+      fecharModal();
+    } catch (err) {
+      alert(err.response?.data?.error || "Erro ao atualizar funcionário");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="listPage">
+      <h2>Funcionários cadastrados</h2>
+
+      <div className="listActions">
+        <button className="btnPrimary" onClick={carregar}>
+          Atualizar
+        </button>
+        <span className="total">Total: {total}</span>
+      </div>
+
+      {msg && <div className="listMsg">{msg}</div>}
+
+      <div className="tableWrap">
+        <table className="listTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>CPF</th>
+              <th>Função</th>
+              <th>Chegada</th>
+              <th>Intervalo início</th>
+              <th>Intervalo fim</th>
+              <th>Saída</th>
+              <th>Criado em</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {lista.length > 0 ? (
+              lista.map((f) => (
+                <tr key={f.id}>
+                  <td>{f.id}</td>
+                  <td>{f.nome}</td>
+                  <td>{formatCPF(f.cpf)}</td>
+                  <td>{f.funcao_nome || "—"}</td>
+                  <td>{f.chegada?.slice(0, 5)}</td>
+                  <td>{f.intervalo_inicio?.slice(0, 5)}</td>
+                  <td>{f.intervalo_fim?.slice(0, 5)}</td>
+                  <td>{f.saida?.slice(0, 5)}</td>
+                  <td>{new Date(f.created_at).toLocaleString()}</td>
+                  <td>
+                    <button
+                      className="btnSecondary"
+                      onClick={() => abrirModal(f)}
+                    >
+                      Alterar
+                    </button>
+
+                    <button
+                      className="btnPrimary"
+                      onClick={() =>
+                        navigate(`/app/cadastrar-rosto/${f.id}`)
+                      }
+                      style={{ marginTop: "6px" }}
+                    >
+                      Cadastrar Rosto
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="10" className="emptyRow">
+                  Nenhum funcionário encontrado.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {open && (
+        <div className="modal-overlay" onClick={fecharModal}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Alterar Funcionário (ID {editing?.id})</h3>
+
+            <div className="modal-grid">
+              <div>
+                <label>Nome</label>
+                <input name="nome" value={form.nome} onChange={onChange} />
+              </div>
+
+              <div>
+                <label>CPF</label>
+                <input
+                  name="cpf"
+                  value={form.cpf}
+                  onChange={onChange}
+                  maxLength={14}
+                />
+              </div>
+
+              <div>
+                <label>Função</label>
+                <select
+                  name="funcao_id"
+                  value={form.funcao_id}
+                  onChange={onChange}
+                >
+                  <option value="">Selecione</option>
+                  {funcoes.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nome}
+                    </option>
+                  ))}
+                  <option value="outro">Outra função</option>
+                </select>
+              </div>
+
+              {form.funcao_id === "outro" && (
+                <div>
+                  <label>Nova função</label>
+                  <input
+                    name="funcao_nome"
+                    value={form.funcao_nome}
+                    onChange={onChange}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label>Chegada</label>
+                <input type="time" name="chegada" value={form.chegada} onChange={onChange} />
+              </div>
+
+              <div>
+                <label>Início intervalo</label>
+                <input type="time" name="intervalo_inicio" value={form.intervalo_inicio} onChange={onChange} />
+              </div>
+
+              <div>
+                <label>Fim intervalo</label>
+                <input type="time" name="intervalo_fim" value={form.intervalo_fim} onChange={onChange} />
+              </div>
+
+              <div>
+                <label>Saída</label>
+                <input type="time" name="saida" value={form.saida} onChange={onChange} />
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="modal-btn-light" onClick={fecharModal}>
+                Cancelar
+              </button>
+
+              <button
+                className="modal-btn-primary"
+                onClick={salvarAlteracoes}
+                disabled={saving}
+              >
+                {saving ? "Salvando..." : "Salvar alterações"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

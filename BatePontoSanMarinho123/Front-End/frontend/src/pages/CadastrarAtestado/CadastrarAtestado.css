@@ -1,0 +1,226 @@
+/* ============================
+   CONTAINER
+============================ */
+.atestado-container{
+  max-width:700px;
+  margin:40px auto;
+  padding:30px;
+
+  background:rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+
+  border-radius:16px;
+
+  box-shadow:0 0 25px rgba(0,0,0,.45);
+
+  font-family:system-ui, Arial;
+  color:#fff;
+}
+
+/* ============================
+   TITULO
+============================ */
+.atestado-container h2{
+  text-align:center;
+  font-size:26px;
+  font-weight:700;
+
+  margin-bottom:30px;
+
+  color:#ff9800;
+
+  text-shadow:0 0 10px rgba(0,0,0,.5);
+}
+
+/* ============================
+   INPUTS E SELECT
+============================ */
+
+.atestado-container select{
+  width:100%;
+}
+
+.atestado-container input{
+  width:96%;
+}
+
+.atestado-container select,
+.atestado-container input{
+
+  padding:14px 16px;
+
+  border-radius:10px;
+  border:2px solid rgba(255,255,255,0.15);
+
+  background:rgba(255,255,255,0.08);
+  color:#fff;
+
+  font-size:17px;
+
+  margin-bottom:22px;
+
+  transition:0.2s ease;
+}
+
+/* ============================
+   FOCUS
+============================ */
+
+.atestado-container select:focus,
+.atestado-container input:focus{
+
+  outline:none;
+
+  border-color:#ff9800;
+
+  background:rgba(255,255,255,0.15);
+
+  box-shadow:0 0 6px rgba(255,152,0,0.5);
+}
+
+/* ============================
+   OPTIONS
+============================ */
+
+.atestado-container select option{
+  background:#ffffff;
+  color:#000;
+}
+
+/* ============================
+   INPUT FILE
+============================ */
+
+.atestado-container input[type="file"]{
+
+  background:rgba(255,255,255,0.15);
+
+  cursor:pointer;
+
+  padding:10px;
+}
+
+/* ============================
+   BOTÃO
+============================ */
+
+.atestado-container button{
+
+  width:100%;
+
+  padding:15px;
+
+  background:#ff9800;
+
+  border:none;
+
+  border-radius:10px;
+
+  font-size:18px;
+  font-weight:600;
+
+  color:white;
+
+  cursor:pointer;
+
+  transition:0.2s ease;
+}
+
+.atestado-container button:hover{
+
+  background:#e68900;
+
+  transform:scale(1.02);
+}
+
+/* ============================
+   MOBILE
+============================ */
+
+@media (max-width:768px){
+
+.atestado-container{
+
+margin:15px;
+padding:22px;
+
+}
+
+}
+
+/* ============================
+   ICONES DATE
+============================ */
+
+.atestado-container input[type="date"]::-webkit-calendar-picker-indicator{
+  
+  filter:invert(62%) sepia(96%) saturate(1500%) hue-rotate(5deg);
+
+  cursor:pointer;
+
+}
+
+.modal-ponto {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-box {
+  background: #ffffffdd;
+  padding: 30px 45px;
+  border-radius: 18px;
+  text-align: center;
+  color: #000;
+  animation: scaleIn 0.25s ease;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.modal-box-erro {
+  background: rgba(255, 240, 240, 0.96);
+}
+
+.modal-icon {
+  font-size: 60px;
+  color: #2ecc71;
+  margin-bottom: 10px;
+}
+
+.modal-icon-erro {
+  color: #e74c3c;
+}
+
+.modal-box h3 {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.modal-box p {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}

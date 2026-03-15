@@ -1,0 +1,262 @@
+/* TELA TOTAL */
+.recScreen {
+  height: 100vh;                /* impede rolagem */
+  overflow: hidden;             /* remove scroll */
+  display: grid;
+  place-items: center;
+  background: #0b0f19;
+}
+
+/* CARD CENTRAL */
+.recCard {
+  width: min(680px, 90vw);
+  padding: 16px 20px;           /* reduzido */
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+}
+
+/* TÍTULO */
+.recTitle {
+  text-align: center;
+  margin: 0 0 10px 0;           /* reduzido */
+}
+
+/* ÁREA DO VÍDEO */
+.videoWrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.video {
+  width: 100%;
+  display: block;
+}
+
+/* CONTADOR */
+.count {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,.65);
+  color: #fff;
+  padding: 6px 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+/* MENSAGEM */
+.recMsg {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+/* BOTÃO CANCELAR — 🔥 VERMELHO */
+.recCancel {
+  margin-top: 10px;
+  margin-left: auto;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #d9534f;          /* vermelho */
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.recCancel:hover {
+  background: #c9302c;          /* vermelho mais forte */
+}
+
+/* ---------------------- */
+/*        MODAL           */
+/* ---------------------- */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+}
+
+.modalCard {
+  background: #fff;
+  width: min(420px, 90vw);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.3);
+}
+
+/* BOTÕES DO MODAL */
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.modalActions button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid #d0d7e2;
+}
+
+/* BOTÃO AZUL (Sou eu) */
+.modalActions button:last-child {
+  background: #0d6efd;
+  border: none;
+  color: #fff;
+}
+
+/* ---------------------- */
+/*      SUCESSO           */
+/* ---------------------- */
+
+.successCard {
+  background: #101826;
+  color: #fff;
+  width: min(420px, 90vw);
+  padding: 22px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,.4);
+}
+
+.successCard button {
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+/* ================================================================= */
+/* 🔥 TELAS ENTRE 600px e 800px — MODO ESPECIAL DE RECONHECIMENTO    */
+/* ================================================================= */
+@media (min-width: 600px) and (max-width: 800px) {
+
+  /* TELA CHEIA */
+  .recScreen {
+    width: 100vw;
+    height: 100vh;
+    background: #0b0f19;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+  }
+
+  /* CARD MAIOR */
+  .recCard {
+    width: 90vw;
+    max-width: 950px;
+    padding: 28px 30px;
+    border-radius: 18px;
+    background: #fff;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,.45);
+
+    /* ✨ DEIXA TUDO MAIS LEGÍVEL */
+    font-size: 20px;
+  }
+
+  /* TÍTULO GRANDE E CLARO */
+  .recTitle {
+    font-size: 34px;
+    font-weight: 900;
+    margin-bottom: 18px;
+    color: #111;
+  }
+
+  /* VÍDEO GIGANTE */
+  .videoWrap {
+    width: 100%;
+    height: 63vh;
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    margin-bottom: 18px;
+  }
+
+  .video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* CONTADOR VISÍVEL */
+  .count {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0,0,0,.75);
+    padding: 12px 22px;
+    border-radius: 50px;
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+  }
+
+  /* MENSAGEM GRANDE */
+  .recMsg {
+    font-size: 22px;
+    font-weight: 600;
+    margin-top: 10px;
+    color: #333;
+  }
+
+  /* BOTÃO CANCELAR */
+  .recCancel {
+    margin-top: 16px;
+    padding: 14px 26px;
+    background: #d9534f;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 800;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .recCancel:hover {
+    background: #c9302c;
+  }
+
+  /* MODAIS */
+  .modalCard,
+  .successCard {
+    width: min(480px, 90vw);
+    padding: 30px;
+    border-radius: 14px;
+
+    /* texto mais confortável */
+    font-size: 22px;
+  }
+
+  .modalCard h3,
+  .successCard h3 {
+    font-size: 28px;
+    font-weight: 800;
+  }
+
+  /* BOTÕES DO MODAL */
+  .modalActions button {
+    font-size: 20px;
+    padding: 12px 20px;
+  }
+  
+}

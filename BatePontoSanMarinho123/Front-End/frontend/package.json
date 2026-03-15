@@ -1,0 +1,26 @@
+{
+  "name": "bateponto-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
+    "pdfkit": "^0.17.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^6.21.1"
+  },
+  "devDependencies": {
+    "@babel/code-frame": "^7.29.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "electron": "^39.2.3",
+    "electron-builder": "^26.0.12",
+    "vite": "^5.0.0"
+  }
+}

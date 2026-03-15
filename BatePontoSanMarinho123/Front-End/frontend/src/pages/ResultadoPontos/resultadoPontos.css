@@ -1,0 +1,231 @@
+/* ==============================
+   TELA INTEIRA — FUNDO HOTEL
+============================== */
+.resultadoContainer {
+  min-height: 100vh;
+  background: url("../../assets/logo/hotel.jpg") center/cover no-repeat fixed;
+  padding: 24px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ==============================
+   CARD PRINCIPAL
+============================== */
+.resultadoCard {
+  width: 100%;
+  max-width: 1150px;
+  background: rgba(6, 18, 38, 0.92);
+  backdrop-filter: blur(4px);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* ==============================
+   TÍTULO
+============================== */
+.resultadoCard h2 {
+  color: #ffffff;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 30px;
+}
+
+/* ==============================
+   INFORMAÇÕES DO TOPO
+============================== */
+.resultadoInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+  color: #e2e8f0;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.resultadoInfo strong {
+  color: #ffffff;
+}
+
+/* ==============================
+   ÁREA RESPONSIVA DA TABELA
+============================== */
+.tableResponsive {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 14px;
+}
+
+/* ==============================
+   TABELA
+============================== */
+.resultadoTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.resultadoTable thead tr {
+  background: rgba(17, 34, 64, 0.95);
+}
+
+.resultadoTable th {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  padding: 16px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.resultadoTable td {
+  color: #ffffff;
+  font-size: 15px;
+  padding: 16px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.resultadoTable tbody tr:nth-child(odd) {
+  background: rgba(8, 24, 50, 0.94);
+}
+
+.resultadoTable tbody tr:nth-child(even) {
+  background: rgba(6, 19, 40, 0.94);
+}
+
+.resultadoTable tbody tr:hover {
+  background: rgba(20, 45, 85, 0.96);
+}
+
+/* ==============================
+   SEM DADOS
+============================== */
+.semDados {
+  text-align: center;
+  color: #cbd5e1;
+  padding: 24px;
+  font-weight: 500;
+}
+
+/* ==============================
+   BOTÕES
+============================== */
+.resultadoActions {
+  margin-top: 22px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btnVoltar,
+.btnInicio {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+  min-width: 180px;
+}
+
+.btnVoltar {
+  background: #1f6feb;
+  color: white;
+}
+
+.btnVoltar:hover {
+  background: #2b7cff;
+  transform: translateY(-1px);
+}
+
+.btnInicio {
+  background: #1d2d44;
+  color: white;
+}
+
+.btnInicio:hover {
+  background: #2b3f5f;
+  transform: translateY(-1px);
+}
+
+/* ==============================
+   MOBILE
+============================== */
+@media (max-width: 520px) {
+  .resultadoContainer {
+    padding: 14px;
+    align-items: flex-start;
+  }
+
+  .resultadoCard {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .resultadoCard h2 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .resultadoInfo {
+    font-size: 13px;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .resultadoTable th,
+  .resultadoTable td {
+    font-size: 13px;
+    padding: 12px 10px;
+  }
+
+  .btnVoltar,
+  .btnInicio {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+/* =======================================================
+   TABLET / TELAS MÉDIAS
+======================================================= */
+@media (min-width: 600px) and (max-width: 900px) {
+  .resultadoCard {
+    max-width: 950px;
+    padding: 28px 30px;
+    border-radius: 22px;
+  }
+
+  .resultadoCard h2 {
+    font-size: 34px;
+    margin-bottom: 24px;
+  }
+
+  .resultadoInfo {
+    font-size: 17px;
+    padding: 16px 18px;
+  }
+
+  .resultadoTable th,
+  .resultadoTable td {
+    font-size: 16px;
+    padding: 15px 12px;
+  }
+
+  .btnVoltar,
+  .btnInicio {
+    font-size: 16px;
+    padding: 13px 24px;
+  }
+}

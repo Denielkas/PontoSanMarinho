@@ -1,0 +1,261 @@
+/* ============================
+   ÁREA GERAL DA LISTA
+============================ */
+.listPage {
+  padding: 20px;
+  font-family: system-ui, Arial;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 14px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+
+.listActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.total {
+  opacity: 0.8;
+  font-size: 16px;
+  color: #dfe3ea;
+}
+
+.listMsg {
+  color: #ff4d4d;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+/* ============================
+   TABELA
+============================ */
+.tableWrap {
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.listTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: #fff;
+}
+
+.listTable th {
+  background: rgba(255, 255, 255, 0.18);
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+  white-space: nowrap;
+  font-size: 15px;
+}
+
+.listTable td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.emptyRow {
+  text-align: center;
+  padding: 20px;
+  color: #ccc;
+}
+
+/* BOTÕES */
+.btnPrimary {
+  padding: 8px 14px;
+  background: #0d6efd;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-left: 10px;
+}
+
+.btnPrimary:hover {
+  background: #0759d3;
+}
+
+.btnSecondary {
+  padding: 7px 12px;
+  background: #6c757d;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: #565e64;
+}
+
+/* ============================
+   MODAL — OVERLAY
+============================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+/* ============================
+   MODAL — CARD
+============================ */
+.modal-card {
+  width: min(650px, 95vw);
+  background: #1a1a1a;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: #fff;
+
+  margin-top: 350px; /* 👈 agora bem mais para baixo */
+}
+
+.modal-card h3 {
+  text-align: center;
+  margin: 0;
+  font-size: 22px;
+  color: #0d6efd;
+  font-weight: 700;
+}
+
+/* ============================
+   GRID
+============================ */
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.modal-card label {
+  display: block;
+  margin-bottom: 6px;
+  color: #d1d5db;
+  font-weight: 600;
+}
+
+/* ============================
+   INPUTS
+============================ */
+.modal-card input {
+  width: 94%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #262626;
+  border: 2px solid #3a3a3a;
+  font-size: 15px;
+  color: #fff;
+  transition: 0.2s;
+}
+
+.modal-card input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 6px rgba(13,110,253,0.4);
+  outline: none;
+}
+
+/* ÍCONE AZUL DO TIME */
+.modal-card input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(41%) sepia(97%) saturate(2476%) hue-rotate(204deg)
+          brightness(96%) contrast(104%);
+}
+
+/* ============================
+   SELECT (FUNÇÃO)
+============================ */
+.modal-card select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #262626;
+  border: 2px solid #3a3a3a;
+  font-size: 15px;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px;
+}
+
+.modal-card select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 6px rgba(13,110,253,0.4);
+  outline: none;
+}
+
+.modal-card select option {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.modal-card select option[value=""] {
+  color: #9ca3af;
+}
+
+/* ============================
+   BOTÕES
+============================ */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.modal-btn-primary {
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: #0d6efd;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.modal-btn-primary:hover {
+  background: #0b57d1;
+}
+
+.modal-btn-light {
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: #f1f1f1;
+  color: #111;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.modal-btn-light:hover {
+  background: #e2e2e2;
+}
+
+/* RESPONSIVO */
+@media (max-width: 600px) {
+  .modal-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,188 @@
+/* ============================
+   CONTAINER PRINCIPAL
+============================ */
+.manual-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 30px;
+
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  border-radius: 16px;
+  box-shadow: 0 0 25px rgba(0,0,0,.45);
+
+  font-family: system-ui, Arial;
+  color: #fff;
+}
+
+/* ============================
+   TÍTULO
+============================ */
+.manual-container h2 {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  color: #0d6efd;
+  text-shadow: 0 0 10px rgba(0,0,0,.5);
+}
+
+/* ============================
+   LABELS (caso use)
+============================ */
+.manual-container label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #eaeaea;
+}
+
+/* ============================
+   CAMPOS (INPUT E SELECT)
+============================ */
+.manual-container select {
+  width: 100%;
+}
+
+.manual-container input {
+  width: 96%;
+}
+
+.manual-container select,
+.manual-container input {
+  padding: 14px 16px;
+
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.15);
+
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+
+  font-size: 17px;
+  margin-bottom: 22px;
+
+  transition: 0.2s ease;
+  appearance: none; /* evita herdar estilo no dropdown */
+}
+
+/* FOCUS */
+.manual-container select:focus,
+.manual-container input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  background: rgba(255,255,255,0.15);
+  box-shadow: 0 0 6px rgba(13,110,253,0.5);
+}
+
+/* ============================
+   EVITA QUE O DROPDOWN ABERTO
+   FIQUE BUGADO (fundo gigante)
+============================ */
+.manual-container select option {
+  background: #ffffff !important;
+  color: #000 !important;
+  padding: 10px;
+}
+
+/* ============================
+   BOTÃO
+============================ */
+.manual-container button {
+  width: 100%;
+  padding: 15px;
+
+  background: #0d6efd;
+  border: none;
+  border-radius: 10px;
+
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.manual-container button:hover {
+  background: #0b57d1;
+}
+
+/* ============================
+   MOBILE
+============================ */
+@media (max-width: 768px) {
+  .manual-container {
+    margin: 15px;
+    padding: 22px;
+  }
+}
+
+
+/* COR DOS ÍCONES DOS INPUTS DATE E TIME */
+.manual-container input[type="date"]::-webkit-calendar-picker-indicator,
+.manual-container input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(41%) sepia(96%) saturate(2880%) hue-rotate(203deg) brightness(95%) contrast(101%);
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+/* HOVER MAIS BONITO */
+.manual-container input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.manual-container input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.modal-ponto {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  background: rgba(255,255,255,.96);
+  padding: 30px 45px;
+  border-radius: 18px;
+  text-align: center;
+  min-width: 320px;
+  animation: scaleIn .25s ease;
+}
+
+.modal-box-erro {
+  background: rgba(255,240,240,.98);
+}
+
+.modal-icon {
+  font-size: 58px;
+  color: #22c55e;
+  margin-bottom: 10px;
+}
+
+.modal-icon-erro {
+  color: #ef4444;
+}
+
+.modal-box h3 {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+
+.modal-box p {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

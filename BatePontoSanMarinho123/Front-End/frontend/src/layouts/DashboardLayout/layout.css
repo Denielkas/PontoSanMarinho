@@ -1,0 +1,160 @@
+/* ==========================================================
+   ZERA QUALQUER SCROLL LATERAL DEFINITIVAMENTE
+========================================================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden !important;
+  width: 100%;
+  height: 100%;
+}
+
+/* ==========================================================
+   CONTAINER GERAL
+========================================================== */
+.dashContainer {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  font-family: system-ui, Arial;
+  overflow: hidden; /* impede barra lateral */
+}
+
+/* ==========================================================
+   BOTÃO MENU (HAMBÚRGUER)
+========================================================== */
+.menuToggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 99999;
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+}
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+.dashSidebar {
+  width: 260px;
+  background: #1a1a1a; /* cinza escuro */
+  color: white;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  position: fixed;
+  top: 0;
+  left: -300px; /* escondido completamente */
+  height: 100vh;
+
+  transition: left 0.35s ease;
+  z-index: 9999;
+  overflow-y: auto;
+}
+
+/* MENU ABERTO */
+.dashSidebar.show {
+  left: 0;
+}
+
+/* ==========================================================
+   LOGO NO TOPO
+========================================================== */
+.sidebarHeader {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+
+.sidebarLogo {
+  width: 130px;
+  object-fit: contain;
+  filter: brightness(1.1);
+}
+
+/* ==========================================================
+   LINKS DO MENU
+========================================================== */
+.dashMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashLink {
+  color: white;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 17px;
+  transition: 0.2s ease;
+}
+
+.dashLink:hover {
+  background: #2e2e2e;
+}
+
+.dashLink.active {
+  background: #0d6efd;
+  color: white !important;
+}
+
+/* ==========================================================
+   BOTÃO SAIR
+========================================================== */
+.dashLogout {
+  margin-top: auto;
+  margin-bottom: 40px;
+  background: #dc3545;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  color: white;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 90%;
+  align-self: center;
+  transition: 0.2s;
+}
+
+.dashLogout:hover {
+  filter: brightness(1.15);
+}
+
+/* ==========================================================
+   CONTEÚDO PRINCIPAL
+========================================================== */
+.dashContent {
+  flex: 1;
+  width: 100vw;
+  height: 100vh;
+  padding: 28px;
+  overflow-y: auto;
+
+  background-image: url("../../assets/logo/hotel-fundo.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+
+  transition: filter 0.3s ease;
+  z-index: 1;
+}
+
+/* ESCURECER TELA QUANDO MENU ABRE */
+.menu-open .dashContent {
+  filter: brightness(0.35);
+}

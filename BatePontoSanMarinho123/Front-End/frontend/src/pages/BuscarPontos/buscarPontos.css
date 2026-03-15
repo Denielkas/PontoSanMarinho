@@ -1,0 +1,129 @@
+/* ==============================
+   TELA INTEIRA — FUNDO HOTEL
+============================== */
+.buscarContainer {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: url("../../assets/logo/hotel.jpg") center/cover no-repeat fixed;
+  padding: 24px;
+}
+
+/* ==============================
+   CARD CENTRAL
+============================== */
+.buscarCard {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  padding: 36px 32px;          /* 🔼 maior */
+  width: 100%;
+  max-width: 420px;            /* 🔼 maior */
+
+  display: flex;
+  flex-direction: column;
+  gap: 22px;                   /* 🔼 mais espaço */
+
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+}
+
+/* ==============================
+   TÍTULO
+============================== */
+.buscarCard h2 {
+  text-align: center;
+  color: #0d6efd;
+  font-weight: 700;
+  font-size: 24px;             /* 🔼 maior */
+}
+
+/* ==============================
+   INPUT CPF
+============================== */
+.buscarCard input {
+  padding: 16px;               /* 🔼 maior */
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-size: 17px;             /* 🔼 maior */
+}
+
+.buscarCard input:focus {
+  border-color: #0d6efd;
+}
+
+/* ==============================
+   BOTÃO BUSCAR
+============================== */
+.buscarCard button {
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;               /* 🔼 maior */
+  font-size: 17px;             /* 🔼 maior */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.buscarCard button:hover {
+  background: #084298;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.buscarCard button:active {
+  transform: scale(0.97);
+}
+
+/* ==============================
+   ERRO
+============================== */
+.buscarErro {
+  color: #dc2626;
+  text-align: center;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* ==============================
+   MOBILE PEQUENO
+============================== */
+@media (max-width: 480px) {
+  .buscarCard {
+    padding: 24px 20px;
+    max-width: 360px;
+  }
+
+  .buscarCard h2 {
+    font-size: 20px;
+  }
+
+  .buscarCard input,
+  .buscarCard button {
+    font-size: 15px;
+    padding: 14px;
+  }
+}
+
+/* ==============================
+   TELAS MÉDIAS (CELULAR GRANDE / TABLET)
+============================== */
+@media (min-width: 600px) and (max-width: 900px) {
+  .buscarCard {
+    max-width: 520px;        /* 🔥 bem mais confortável */
+    padding: 48px 44px;
+    border-radius: 24px;
+    gap: 26px;
+  }
+
+  .buscarCard h2 {
+    font-size: 28px;
+  }
+
+  .buscarCard input,
+  .buscarCard button {
+    font-size: 18px;
+    padding: 18px;
+  }
+}

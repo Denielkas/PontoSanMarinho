@@ -42,7 +42,8 @@ export default function CadastrarRosto() {
         const { data } = await api.get(`/funcionarios/${id}`);
         setNome(data.nome);
       } catch (err) {
-        console.error(err);
+        console.error("Erro ao carregar funcionário:", err);
+        setMsg("Erro ao carregar funcionário");
       }
     }
 
@@ -68,14 +69,18 @@ export default function CadastrarRosto() {
           videoRef.current.srcObject = stream;
 
           await new Promise((resolve) => {
-            videoRef.current.onloadedmetadata = () => {
-              videoRef.current.play();
+            videoRef.current.onloadedmetadata = async () => {
+              try {
+                await videoRef.current.play();
+              } catch (e) {
+                console.error("Erro ao dar play no vídeo:", e);
+              }
               resolve();
             };
           });
         }
 
-        setMsg("Câmera pronta.");
+        setMsg("Câmera pronta. Clique para capturar o rosto.");
       } catch (err) {
         console.error("Erro câmera:", err);
         setMsg("Erro ao acessar câmera");
@@ -97,67 +102,77 @@ export default function CadastrarRosto() {
     const canvas = canvasRef.current;
 
     if (!video || !canvas) return null;
-
-    if (video.readyState < 2) {
-      return null;
-    }
+    if (video.readyState < 2) return null;
 
     const width = video.videoWidth;
     const height = video.videoHeight;
 
-    if (!width || !height) {
-      return null;
-    }
+    if (!width || !height) return null;
 
     canvas.width = width;
     canvas.height = height;
 
     const ctx = canvas.getContext("2d");
-
     ctx.drawImage(video, 0, 0, width, height);
 
-    return canvas.toDataURL("image/jpeg", 0.9);
+    const imageBase64 = canvas.toDataURL("image/jpeg", 0.9);
+
+    if (!imageBase64 || !imageBase64.startsWith("data:image/jpeg;base64,")) {
+      return null;
+    }
+
+    return imageBase64;
   };
 
   const salvar = async () => {
     if (saving) return;
 
     setSaving(true);
+    setMsg("Capturando imagem...");
 
     const img = captureFrame();
 
     if (!img) {
       abrirModal("Erro ao cadastrar", "Não foi possível capturar a imagem.", true);
       setSaving(false);
+      setMsg("Câmera pronta. Clique para capturar o rosto.");
       return;
     }
 
     try {
-      const { data } = await apiFace.post("/enroll", {
+      const payload = {
         funcionario_id: Number(id),
         image_base64: img,
+      };
+
+      console.log("Enviando payload facial:", {
+        funcionario_id: payload.funcionario_id,
+        image_base64_inicio: payload.image_base64.slice(0, 40),
       });
 
-      if (!data.ok) {
-        throw new Error(data.error || "Falha ao cadastrar");
+      const { data } = await apiFace.post("/enroll", payload);
+
+      if (!data?.ok) {
+        throw new Error(data?.error || "Falha ao cadastrar rosto");
       }
 
       abrirModal(
         "Registrado com sucesso!",
-        `Rosto de ${nome} cadastrado com sucesso.`,
+        `Rosto de ${nome || "funcionário"} cadastrado com sucesso.`,
         false,
         true
       );
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao cadastrar rosto:", err);
 
       abrirModal(
         "Erro ao cadastrar",
-        err?.response?.data?.error || err.message,
+        err?.response?.data?.error || err.message || "Erro ao cadastrar rosto.",
         true
       );
     } finally {
       setSaving(false);
+      setMsg("Câmera pronta. Clique para capturar o rosto.");
     }
   };
 
@@ -182,7 +197,11 @@ export default function CadastrarRosto() {
         {msg}
       </p>
 
-      <button onClick={salvar} className="rostocadBtn">
+      <button
+        onClick={salvar}
+        className="rostocadBtn"
+        disabled={saving}
+      >
         {saving ? "Salvando..." : "Capturar e Salvar"}
       </button>
 

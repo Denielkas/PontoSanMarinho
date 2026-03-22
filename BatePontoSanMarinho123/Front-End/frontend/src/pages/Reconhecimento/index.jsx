@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { api } from "../../services/api";
 import { apiFace } from "../../services/apiFace";
 import "./reconhecimento.css";
@@ -24,8 +23,17 @@ export default function Reconhecimento() {
   useEffect(() => {
     async function iniciarCamera() {
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setMsg("Câmera indisponível neste navegador ou fora de HTTPS.");
+          return;
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480, facingMode: "user" },
+          video: {
+            width: 640,
+            height: 480,
+            facingMode: "user",
+          },
           audio: false,
         });
 

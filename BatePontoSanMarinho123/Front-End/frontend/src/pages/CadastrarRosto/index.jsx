@@ -11,6 +11,7 @@ export default function CadastrarRosto() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const streamRef = useRef(null);
 
   const [nome, setNome] = useState("");
   const [msg, setMsg] = useState("Carregando...");
@@ -37,34 +38,34 @@ export default function CadastrarRosto() {
   };
 
   useEffect(() => {
-    let stream = null;
-
-    const carregarFuncionario = async () => {
+    async function carregarFuncionario() {
       try {
         const { data } = await api.get(`/funcionarios/${id}`);
         setNome(data.nome);
         setMsg("Preparando câmera...");
-      } catch (err) {
-        console.error("Erro ao carregar funcionário:", err);
+      } catch (error) {
+        console.error("Erro ao carregar funcionário:", error);
         setMsg("Erro ao carregar funcionário");
       }
-    };
+    }
 
-    const iniciarCamera = async () => {
+    async function iniciarCamera() {
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setMsg("Seu navegador não suporta câmera");
+          setMsg("Câmera indisponível neste navegador ou fora de HTTPS.");
           return;
         }
 
-        stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: {
+            width: 640,
+            height: 480,
             facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 },
           },
           audio: false,
         });
+
+        streamRef.current = stream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -72,25 +73,21 @@ export default function CadastrarRosto() {
         }
 
         setMsg("Clique para capturar o rosto");
-      } catch (err) {
-        console.error("Erro ao acessar câmera:", err);
+      } catch (error) {
+        console.error("Erro ao acessar câmera:", error);
         setMsg("Erro ao acessar a câmera");
       }
-    };
+    }
 
     carregarFuncionario();
     iniciarCamera();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [id, navigate]);
+  }, [id]);
 
   const captureFrame = () => {
     const video = videoRef.current;
@@ -109,6 +106,8 @@ export default function CadastrarRosto() {
   };
 
   const salvar = async () => {
+    if (saving) return;
+
     setSaving(true);
 
     const img = captureFrame();
@@ -125,8 +124,8 @@ export default function CadastrarRosto() {
         image_base64: img,
       });
 
-      if (!data.ok) {
-        throw new Error(data.error || "Falha no cadastro facial");
+      if (!data?.ok) {
+        throw new Error(data?.error || "Falha no cadastro facial");
       }
 
       abrirModal(
@@ -135,11 +134,14 @@ export default function CadastrarRosto() {
         false,
         true
       );
-    } catch (err) {
-      console.error("Erro ao cadastrar rosto:", err);
+    } catch (error) {
+      console.error("Erro ao cadastrar rosto:", error);
+
       abrirModal(
         "Erro ao cadastrar",
-        "Erro ao cadastrar rosto.",
+        error?.response?.data?.error ||
+          error?.message ||
+          "Erro ao cadastrar rosto.",
         true
       );
     } finally {
@@ -152,13 +154,7 @@ export default function CadastrarRosto() {
       <h2>Cadastrar Rosto</h2>
 
       <div className="videoArea">
-        <video
-          ref={videoRef}
-          className="video"
-          autoPlay
-          playsInline
-          muted
-        />
+        <video ref={videoRef} className="video" autoPlay playsInline muted />
       </div>
 
       <canvas ref={canvasRef} style={{ display: "none" }} />

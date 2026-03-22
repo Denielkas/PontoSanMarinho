@@ -2,9 +2,6 @@ const pool = require("../database/pool");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-/* =========================================
-   GARANTE TABELA ADMINS
-========================================= */
 async function garantirTabelaAdmins() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admins (
@@ -16,14 +13,17 @@ async function garantirTabelaAdmins() {
   `);
 }
 
-/* =========================================
-   LOGIN
-========================================= */
 exports.login = async (req, res) => {
   try {
     await garantirTabelaAdmins();
 
     const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        error: "Usuário e senha são obrigatórios",
+      });
+    }
 
     const { rows } = await pool.query(
       "SELECT * FROM admins WHERE username = $1 LIMIT 1",
@@ -72,9 +72,6 @@ exports.login = async (req, res) => {
   }
 };
 
-/* =========================================
-   REGISTER
-========================================= */
 exports.register = async (req, res) => {
   try {
     await garantirTabelaAdmins();

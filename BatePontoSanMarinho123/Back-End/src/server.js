@@ -40,7 +40,7 @@ app.use("/api/funcoes", funcaoRoutes);
 app.use("/api/atestado", atestadoRoutes);
 app.use("/api/banco-horas", bancoHorasRoutes);
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.send("API rodando com sucesso 🚀");
 });
 

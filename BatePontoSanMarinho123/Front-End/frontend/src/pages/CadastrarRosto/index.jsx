@@ -30,11 +30,10 @@ export default function CadastrarRosto() {
 
     setTimeout(() => {
       setModalOpen(false);
-
       if (redirecionar) {
         navigate("/app/funcionarios");
       }
-    }, 1800);
+    }, 2000);
   };
 
   useEffect(() => {
@@ -42,25 +41,23 @@ export default function CadastrarRosto() {
       try {
         const { data } = await api.get(`/funcionarios/${id}`);
         setNome(data.nome);
-        setMsg("Preparando câmera...");
-      } catch (error) {
-        console.error("Erro ao carregar funcionário:", error);
-        setMsg("Erro ao carregar funcionário");
+      } catch (err) {
+        console.error(err);
       }
     }
 
     async function iniciarCamera() {
       try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setMsg("Câmera indisponível neste navegador ou fora de HTTPS.");
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setMsg("Câmera indisponível neste navegador.");
           return;
         }
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: 640,
-            height: 480,
             facingMode: "user",
+            width: { ideal: 640 },
+            height: { ideal: 480 },
           },
           audio: false,
         });
@@ -69,13 +66,19 @@ export default function CadastrarRosto() {
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          await videoRef.current.play();
+
+          await new Promise((resolve) => {
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current.play();
+              resolve();
+            };
+          });
         }
 
-        setMsg("Clique para capturar o rosto");
-      } catch (error) {
-        console.error("Erro ao acessar câmera:", error);
-        setMsg("Erro ao acessar a câmera");
+        setMsg("Câmera pronta.");
+      } catch (err) {
+        console.error("Erro câmera:", err);
+        setMsg("Erro ao acessar câmera");
       }
     }
 
@@ -84,7 +87,7 @@ export default function CadastrarRosto() {
 
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
   }, [id]);
@@ -94,13 +97,24 @@ export default function CadastrarRosto() {
     const canvas = canvasRef.current;
 
     if (!video || !canvas) return null;
-    if (!video.videoWidth || !video.videoHeight) return null;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    if (video.readyState < 2) {
+      return null;
+    }
+
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+
+    if (!width || !height) {
+      return null;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(video, 0, 0, width, height);
 
     return canvas.toDataURL("image/jpeg", 0.9);
   };
@@ -124,24 +138,22 @@ export default function CadastrarRosto() {
         image_base64: img,
       });
 
-      if (!data?.ok) {
-        throw new Error(data?.error || "Falha no cadastro facial");
+      if (!data.ok) {
+        throw new Error(data.error || "Falha ao cadastrar");
       }
 
       abrirModal(
         "Registrado com sucesso!",
-        `Rosto de ${nome || "funcionário"} cadastrado com sucesso!`,
+        `Rosto de ${nome} cadastrado com sucesso.`,
         false,
         true
       );
-    } catch (error) {
-      console.error("Erro ao cadastrar rosto:", error);
+    } catch (err) {
+      console.error(err);
 
       abrirModal(
         "Erro ao cadastrar",
-        error?.response?.data?.error ||
-          error?.message ||
-          "Erro ao cadastrar rosto.",
+        err?.response?.data?.error || err.message,
         true
       );
     } finally {
@@ -154,7 +166,13 @@ export default function CadastrarRosto() {
       <h2>Cadastrar Rosto</h2>
 
       <div className="videoArea">
-        <video ref={videoRef} className="video" autoPlay playsInline muted />
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="video"
+        />
       </div>
 
       <canvas ref={canvasRef} style={{ display: "none" }} />
@@ -164,7 +182,7 @@ export default function CadastrarRosto() {
         {msg}
       </p>
 
-      <button className="rostocadBtn" onClick={salvar} disabled={saving}>
+      <button onClick={salvar} className="rostocadBtn">
         {saving ? "Salvando..." : "Capturar e Salvar"}
       </button>
 

@@ -128,3 +128,12 @@
     transform: scale(1);
   }
 }
+
+.video {
+  width: 100%;
+  max-width: 700px;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 18px;
+  background: black;
+}

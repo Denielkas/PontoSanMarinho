@@ -10,6 +10,8 @@ export default function Reconhecimento() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const frameLoop = useRef(null);
+  const streamRef = useRef(null);
 
   const [msg, setMsg] = useState("Detectando rosto...");
   const [working, setWorking] = useState(false);
@@ -19,71 +21,76 @@ export default function Reconhecimento() {
   const [funcNome, setFuncNome] = useState("");
   const [funcCpf, setFuncCpf] = useState("");
 
-  const frameLoop = useRef(null);
-
-  /* --------------------------
-      1) INICIALIZA A CÂMERA
-  --------------------------- */
   useEffect(() => {
-    (async () => {
+    async function iniciarCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
+          video: { width: 640, height: 480, facingMode: "user" },
+          audio: false,
         });
 
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
 
         startRecognitionLoop();
       } catch (err) {
+        console.error("Erro ao acessar a câmera:", err);
         setMsg("Erro ao acessar a câmera");
       }
-    })();
+    }
+
+    iniciarCamera();
 
     return () => {
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
       }
-      clearInterval(frameLoop.current);
+
+      if (frameLoop.current) {
+        clearInterval(frameLoop.current);
+      }
     };
   }, []);
 
-  /* --------------------------
-       2) CAPTURAR FRAME
-  --------------------------- */
   const captureFrame = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
+
+    if (!video || !canvas) return null;
+    if (!video.videoWidth || !video.videoHeight) return null;
 
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
 
     const ctx = canvas.getContext("2d");
-
-    /* 🔥 Reduz resolução para acelerar envio */
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    /* 🔥 JPEG mais leve para envio rápido */
     return canvas.toDataURL("image/jpeg", 0.6);
   };
 
-  /* --------------------------
-     3) LOOP SUPER RÁPIDO
-  --------------------------- */
   const startRecognitionLoop = () => {
+    if (frameLoop.current) {
+      clearInterval(frameLoop.current);
+    }
+
     frameLoop.current = setInterval(async () => {
       if (working || confirmOpen) return;
 
-      setWorking(true);
-
       const frame = captureFrame();
+      if (!frame) return;
+
+      setWorking(true);
 
       try {
         const { data } = await apiFace.post("/recognize", {
           image_base64: frame,
         });
 
-        if (data?.matched && data.funcionario_id) {
+        if (data?.matched && data?.funcionario_id) {
           clearInterval(frameLoop.current);
 
           setFuncId(data.funcionario_id);
@@ -99,24 +106,22 @@ export default function Reconhecimento() {
           setMsg("Procurando rosto...");
         }
       } catch (err) {
+        console.error("Erro no reconhecimento:", err);
+      } finally {
+        setWorking(false);
       }
-
-      setWorking(false);
-    }, 200); // 🔥 5x POR SEGUNDO — muito rápido
+    }, 700);
   };
 
-  /* --------------------------
-     4) BOTÃO: NÃO SOU EU
-  --------------------------- */
   const cancelarIdentidade = () => {
     setConfirmOpen(false);
+    setFuncId(null);
+    setFuncNome("");
+    setFuncCpf("");
     setMsg("Detectando rosto...");
     startRecognitionLoop();
   };
 
-  /* --------------------------
-     5) BOTÃO: SOU EU
-  --------------------------- */
   const confirmarIdentidade = () => {
     navigate("/escolher-batida", {
       state: {
@@ -129,16 +134,13 @@ export default function Reconhecimento() {
     });
   };
 
-  /* --------------------------
-               HTML
-  --------------------------- */
   return (
     <div className="recScreen">
       <div className="recCard">
         <h2 className="recTitle">Reconhecimento Facial</h2>
 
         <div className="videoWrap">
-          <video ref={videoRef} className="video" muted playsInline />
+          <video ref={videoRef} className="video" autoPlay muted playsInline />
         </div>
 
         <div className="recMsg">{msg}</div>
@@ -150,14 +152,17 @@ export default function Reconhecimento() {
 
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
-      {/* CONFIRMAÇÃO */}
       {confirmOpen && (
         <div className="modalOverlay" onClick={cancelarIdentidade}>
           <div className="modalCard" onClick={(e) => e.stopPropagation()}>
             <h3>Confirmar identidade</h3>
 
-            <p><strong>{funcNome}</strong></p>
-            <p>CPF: <strong>{funcCpf}</strong></p>
+            <p>
+              <strong>{funcNome}</strong>
+            </p>
+            <p>
+              CPF: <strong>{funcCpf}</strong>
+            </p>
 
             <div className="modalActions">
               <button onClick={cancelarIdentidade}>Não sou eu</button>

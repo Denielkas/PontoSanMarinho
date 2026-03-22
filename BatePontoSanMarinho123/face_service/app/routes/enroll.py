@@ -5,6 +5,7 @@ from app.utils_face import decode_image, get_face_embedding
 
 router = APIRouter()
 
+
 def garantir_tabela_face_embeddings(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS face_embeddings (
@@ -12,6 +13,7 @@ def garantir_tabela_face_embeddings(cur):
             embedding FLOAT8[] NOT NULL
         );
     """)
+
 
 @router.post("/enroll")
 def enroll(data: FaceEnroll):

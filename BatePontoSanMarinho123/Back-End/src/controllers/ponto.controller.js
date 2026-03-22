@@ -1,13 +1,65 @@
 const pool = require("../database/pool");
 
-/* =========================================================
-   GARANTE TABELAS
-========================================================= */
-async function ensureTable() {
+/* =========================================
+   GARANTE TABELA FUNCOES
+========================================= */
+async function garantirTabelaFuncoes() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS funcoes (
+      id BIGSERIAL PRIMARY KEY,
+      nome VARCHAR(150) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+}
+
+/* =========================================
+   GARANTE TABELA FUNCIONARIOS
+========================================= */
+async function garantirTabelaFuncionarios() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS funcionarios (
+      id BIGSERIAL PRIMARY KEY,
+      nome VARCHAR(200) NOT NULL,
+      cpf VARCHAR(20) NOT NULL UNIQUE,
+      chegada TIME,
+      intervalo_inicio TIME,
+      intervalo_fim TIME,
+      saida TIME,
+      funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  try {
+    await pool.query(`
+      ALTER TABLE funcionarios
+      ADD COLUMN IF NOT EXISTS funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL
+    `);
+
+    await pool.query(`
+      ALTER TABLE funcionarios
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+    `);
+
+    await pool.query(`
+      ALTER TABLE funcionarios
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+    `);
+  } catch (err) {
+    console.log("Colunas da tabela funcionarios já existem ou não foi necessário alterar.");
+  }
+}
+
+/* =========================================
+   GARANTE TABELA PONTOS
+========================================= */
+async function garantirTabelaPontos() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pontos (
       id BIGSERIAL PRIMARY KEY,
-      funcionario_id BIGINT NOT NULL,
+      funcionario_id BIGINT NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
       tipo TEXT NOT NULL,
       marcado_em TIMESTAMP DEFAULT NOW(),
       CHECK (tipo IN ('entrada','intervalo_inicio','intervalo_fim','saida','auto'))
@@ -15,7 +67,10 @@ async function ensureTable() {
   `);
 }
 
-async function ensureFaltasTable() {
+/* =========================================
+   GARANTE TABELA FALTAS_AJUSTES
+========================================= */
+async function garantirTabelaFaltas() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS faltas_ajustes (
       id BIGSERIAL PRIMARY KEY,
@@ -23,6 +78,7 @@ async function ensureFaltasTable() {
       data DATE NOT NULL,
       falta BOOLEAN NOT NULL DEFAULT false,
       folga BOOLEAN NOT NULL DEFAULT false,
+      ferias BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW(),
       UNIQUE (funcionario_id, data)
@@ -34,24 +90,83 @@ async function ensureFaltasTable() {
       ALTER TABLE faltas_ajustes
       ADD COLUMN IF NOT EXISTS folga BOOLEAN NOT NULL DEFAULT false
     `);
+
+    await pool.query(`
+      ALTER TABLE faltas_ajustes
+      ADD COLUMN IF NOT EXISTS ferias BOOLEAN NOT NULL DEFAULT false
+    `);
+
+    await pool.query(`
+      ALTER TABLE faltas_ajustes
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+    `);
+
+    await pool.query(`
+      ALTER TABLE faltas_ajustes
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+    `);
   } catch (err) {
-    console.log("Coluna folga já existe ou não foi necessário alterar.");
+    console.log("Colunas da tabela faltas_ajustes já existem ou não foi necessário alterar.");
   }
 }
 
-/* =========================================================
-   HELPERS
-========================================================= */
+/* =========================================
+   GARANTE TABELA ATESTADOS
+========================================= */
+async function garantirTabelaAtestados() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS atestados (
+      id BIGSERIAL PRIMARY KEY,
+      funcionario_id BIGINT NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
+      data_inicio DATE NOT NULL,
+      data_fim DATE NOT NULL,
+      arquivo TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+}
+
+async function garantirTabelas() {
+  await garantirTabelaFuncoes();
+  await garantirTabelaFuncionarios();
+  await garantirTabelaPontos();
+  await garantirTabelaFaltas();
+  await garantirTabelaAtestados();
+}
+
+/* =========================================
+   HELPERS TIMEZONE
+========================================= */
+function agoraSP() {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+  );
+}
+
+function dataHojeISO() {
+  const agora = agoraSP();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function dataHoraAgoraSQL() {
+  const agora = agoraSP();
+  const data = dataHojeISO();
+  const hora = String(agora.getHours()).padStart(2, "0");
+  const minuto = String(agora.getMinutes()).padStart(2, "0");
+  const segundo = String(agora.getSeconds()).padStart(2, "0");
+  return `${data} ${hora}:${minuto}:${segundo}`;
+}
+
 function montarDataHora(dataBR, hora) {
   if (!dataBR || !hora) return null;
 
   const [d, m, a] = String(dataBR).split("/");
   if (!d || !m || !a) return null;
 
-  return `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(
-    2,
-    "0"
-  )} ${hora}:00`;
+  return `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")} ${hora}:00`;
 }
 
 function dataBRparaISO(dataBR) {
@@ -65,26 +180,23 @@ function dataBRparaISO(dataBR) {
 
 function normalizarHora(valor) {
   if (!valor) return null;
-
   const texto = String(valor).trim();
-
-  if (texto.length >= 5) {
-    return texto.slice(0, 5);
-  }
-
+  if (texto.length >= 5) return texto.slice(0, 5);
   return null;
 }
 
 async function buscarPontosHoje(funcionario_id) {
+  const hoje = dataHojeISO();
+
   const { rows } = await pool.query(
     `
     SELECT id, tipo, marcado_em
     FROM pontos
     WHERE funcionario_id = $1
-      AND marcado_em::date = CURRENT_DATE
+      AND marcado_em::date = $2::date
     ORDER BY marcado_em ASC, id ASC
     `,
-    [funcionario_id]
+    [funcionario_id, hoje]
   );
 
   return rows;
@@ -129,12 +241,9 @@ function getPermissoesPorUltimaBatida(ultimaBatida) {
   return permissoes;
 }
 
-/* =========================================================
-   STATUS DOS BOTÕES
-========================================================= */
 exports.statusBatidas = async (req, res) => {
   try {
-    await ensureTable();
+    await garantirTabelas();
 
     const { funcionario_id } = req.params;
 
@@ -161,12 +270,9 @@ exports.statusBatidas = async (req, res) => {
   }
 };
 
-/* =========================================================
-   AUTO — reconhecimento facial simples
-========================================================= */
 exports.auto = async (req, res) => {
   try {
-    await ensureTable();
+    await garantirTabelas();
 
     const { funcionario_id } = req.body;
 
@@ -184,14 +290,15 @@ exports.auto = async (req, res) => {
 
     const ordem = ["entrada", "intervalo_inicio", "intervalo_fim", "saida"];
     const tipo = ordem[pontosHoje.length];
+    const marcado_em = dataHoraAgoraSQL();
 
     const { rows } = await pool.query(
       `
-      INSERT INTO pontos (funcionario_id, tipo)
-      VALUES ($1, $2)
+      INSERT INTO pontos (funcionario_id, tipo, marcado_em)
+      VALUES ($1, $2, $3)
       RETURNING *
       `,
-      [funcionario_id, tipo]
+      [funcionario_id, tipo, marcado_em]
     );
 
     return res.json(rows[0]);
@@ -201,12 +308,9 @@ exports.auto = async (req, res) => {
   }
 };
 
-/* =========================================================
-   BATER → usado pela tela "EscolherBatida"
-========================================================= */
 exports.bater = async (req, res) => {
   try {
-    await ensureTable();
+    await garantirTabelas();
 
     const { funcionario_id, tipo } = req.body;
 
@@ -233,13 +337,15 @@ exports.bater = async (req, res) => {
       });
     }
 
+    const marcado_em = dataHoraAgoraSQL();
+
     const { rows } = await pool.query(
       `
-      INSERT INTO pontos (funcionario_id, tipo)
-      VALUES ($1, $2)
+      INSERT INTO pontos (funcionario_id, tipo, marcado_em)
+      VALUES ($1, $2, $3)
       RETURNING *
       `,
-      [funcionario_id, tipo]
+      [funcionario_id, tipo, marcado_em]
     );
 
     return res.json(rows[0]);
@@ -249,12 +355,9 @@ exports.bater = async (req, res) => {
   }
 };
 
-/* =========================================================
-   INSERIR MANUAL
-========================================================= */
 exports.inserirManual = async (req, res) => {
   try {
-    await ensureTable();
+    await garantirTabelas();
 
     const { funcionario_id, tipo, data, hora } = req.body;
 
@@ -288,15 +391,11 @@ exports.inserirManual = async (req, res) => {
   }
 };
 
-/* =========================================================
-   AJUSTAR LINHA ESPECÍFICA / FALTA / FOLGA
-========================================================= */
 exports.ajustar = async (req, res) => {
   const client = await pool.connect();
 
   try {
-    await ensureTable();
-    await ensureFaltasTable();
+    await garantirTabelas();
     await client.query("BEGIN");
 
     const {
@@ -309,6 +408,7 @@ exports.ajustar = async (req, res) => {
       saida,
       falta = false,
       folga = false,
+      ferias = false,
     } = req.body;
 
     if (!funcionario_id || !data) {
@@ -332,18 +432,19 @@ exports.ajustar = async (req, res) => {
 
     await client.query(
       `
-      INSERT INTO faltas_ajustes (funcionario_id, data, falta, folga, updated_at)
-      VALUES ($1, $2, $3, $4, NOW())
+      INSERT INTO faltas_ajustes (funcionario_id, data, falta, folga, ferias, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
       ON CONFLICT (funcionario_id, data)
       DO UPDATE SET
         falta = EXCLUDED.falta,
         folga = EXCLUDED.folga,
+        ferias = EXCLUDED.ferias,
         updated_at = NOW()
       `,
-      [funcionario_id, dataISO, !!falta, !!folga]
+      [funcionario_id, dataISO, !!falta, !!folga, !!ferias]
     );
 
-    if (falta === true || folga === true) {
+    if (falta === true || folga === true || ferias === true) {
       await client.query(
         `
         DELETE FROM pontos
@@ -359,10 +460,13 @@ exports.ajustar = async (req, res) => {
         ok: true,
         falta: !!falta,
         folga: !!folga,
+        ferias: !!ferias,
         ids_originais: {},
         message: falta
           ? "Falta registrada com sucesso."
-          : "Folga registrada com sucesso.",
+          : folga
+          ? "Folga registrada com sucesso."
+          : "Férias registrada com sucesso.",
       });
     }
 
@@ -430,6 +534,7 @@ exports.ajustar = async (req, res) => {
       UPDATE faltas_ajustes
       SET falta = false,
           folga = false,
+          ferias = false,
           updated_at = NOW()
       WHERE funcionario_id = $1
         AND data = $2
@@ -443,6 +548,7 @@ exports.ajustar = async (req, res) => {
       ok: true,
       falta: false,
       folga: false,
+      ferias: false,
       ids_originais: novosIds,
       message: "Horários ajustados com sucesso.",
     });
@@ -455,15 +561,11 @@ exports.ajustar = async (req, res) => {
   }
 };
 
-/* =========================================================
-   LANÇAR HORÁRIO PADRÃO EM TODO O MÊS
-========================================================= */
 exports.lancarHorarioPadraoMes = async (req, res) => {
   const client = await pool.connect();
 
   try {
-    await ensureTable();
-    await ensureFaltasTable();
+    await garantirTabelas();
     await client.query("BEGIN");
 
     const { funcionario_id, mes, ano } = req.body;
@@ -480,20 +582,12 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
 
     if (mesNum < 1 || mesNum > 12) {
       await client.query("ROLLBACK");
-      return res.status(400).json({
-        error: "Mês inválido.",
-      });
+      return res.status(400).json({ error: "Mês inválido." });
     }
 
     const { rows: funcionarios } = await client.query(
       `
-      SELECT
-        id,
-        nome,
-        chegada,
-        intervalo_inicio,
-        intervalo_fim,
-        saida
+      SELECT id, nome, chegada, intervalo_inicio, intervalo_fim, saida
       FROM funcionarios
       WHERE id = $1
       `,
@@ -526,9 +620,7 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
     const detalhes = [];
 
     for (let dia = 1; dia <= diasNoMes; dia++) {
-      const dataISO = `${anoNum}-${String(mesNum).padStart(2, "0")}-${String(
-        dia
-      ).padStart(2, "0")}`;
+      const dataISO = `${anoNum}-${String(mesNum).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
       const { rows: pontosExistentes } = await client.query(
         `
@@ -553,7 +645,7 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
 
       const { rows: ajusteExistente } = await client.query(
         `
-        SELECT id, falta, folga
+        SELECT id, falta, folga, ferias
         FROM faltas_ajustes
         WHERE funcionario_id = $1
           AND data = $2::date
@@ -564,7 +656,7 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
 
       if (
         ajusteExistente.length > 0 &&
-        (ajusteExistente[0].falta || ajusteExistente[0].folga)
+        (ajusteExistente[0].falta || ajusteExistente[0].folga || ajusteExistente[0].ferias)
       ) {
         diasIgnorados++;
         detalhes.push({
@@ -572,7 +664,9 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
           status: "ignorado",
           motivo: ajusteExistente[0].falta
             ? "Dia marcado como falta"
-            : "Dia marcado como folga",
+            : ajusteExistente[0].folga
+            ? "Dia marcado como folga"
+            : "Dia marcado como férias",
         });
         continue;
       }
@@ -618,12 +712,13 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
 
       await client.query(
         `
-        INSERT INTO faltas_ajustes (funcionario_id, data, falta, folga, updated_at)
-        VALUES ($1, $2::date, false, false, NOW())
+        INSERT INTO faltas_ajustes (funcionario_id, data, falta, folga, ferias, updated_at)
+        VALUES ($1, $2::date, false, false, false, NOW())
         ON CONFLICT (funcionario_id, data)
         DO UPDATE SET
           falta = false,
           folga = false,
+          ferias = false,
           updated_at = NOW()
         `,
         [funcionario_id, dataISO]
@@ -657,12 +752,9 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
   }
 };
 
-/* =========================================================
-   BUSCAR PONTOS POR CPF
-========================================================= */
 exports.buscarPorCPF = async (req, res) => {
   try {
-    await ensureTable();
+    await garantirTabelas();
 
     const { cpf } = req.params;
 
@@ -687,6 +779,7 @@ exports.buscarPorCPF = async (req, res) => {
     }
 
     const funcionario = funcs[0];
+    const hoje = dataHojeISO();
 
     const { rows: pontos } = await pool.query(
       `
@@ -698,10 +791,10 @@ exports.buscarPorCPF = async (req, res) => {
         marcado_em
       FROM pontos
       WHERE funcionario_id = $1
-        AND marcado_em::date = CURRENT_DATE
+        AND marcado_em::date = $2::date
       ORDER BY marcado_em ASC, id ASC
       `,
-      [funcionario.id]
+      [funcionario.id, hoje]
     );
 
     return res.json({ funcionario, pontos });

@@ -2,10 +2,25 @@ const pool = require("../database/pool");
 const fs = require("fs");
 const path = require("path");
 
-const PASTA_UPLOADS = "C:/sistema-arquivos/uploads";
+const PASTA_UPLOADS = process.env.UPLOADS_DIR || path.join(__dirname, "../../uploads");
+
+async function garantirTabelaAtestados() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS atestados (
+      id BIGSERIAL PRIMARY KEY,
+      funcionario_id BIGINT NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
+      data_inicio DATE NOT NULL,
+      data_fim DATE NOT NULL,
+      arquivo TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+}
 
 async function salvarAtestado(req, res) {
   try {
+    await garantirTabelaAtestados();
+
     const { funcionario_id, data_inicio, data_fim } = req.body;
 
     if (!funcionario_id || !data_inicio || !data_fim) {
@@ -57,6 +72,8 @@ function converterDataBRparaISO(dataBR) {
 
 async function removerAtestado(req, res) {
   try {
+    await garantirTabelaAtestados();
+
     const { funcionario_id, data } = req.body;
 
     if (!funcionario_id || !data) {

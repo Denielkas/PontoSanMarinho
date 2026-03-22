@@ -94,6 +94,10 @@
   background: #162033;
 }
 
+/* =========================
+   LINHAS DE STATUS
+========================= */
+
 .linha-atestado {
   background: rgba(255, 165, 0, 0.1);
 }
@@ -119,6 +123,10 @@
   background: rgba(231, 76, 60, 0.15) !important;
 }
 
+.linha-falta td {
+  border-top: 1px solid rgba(231, 76, 60, 0.18);
+}
+
 .linha-falta td:first-child {
   color: #ff4d4d;
   font-weight: 700;
@@ -141,10 +149,33 @@
   font-weight: 700;
 }
 
+.linha-ferias {
+  background: rgba(139, 92, 246, 0.14) !important;
+}
+
+.linha-ferias:hover {
+  background: rgba(139, 92, 246, 0.22) !important;
+}
+
+.linha-ferias td {
+  border-top: 1px solid rgba(139, 92, 246, 0.22);
+  color: #e9d5ff;
+}
+
+.linha-ferias td:first-child {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+/* =========================
+   BADGES
+========================= */
+
 .badge-falta-sim,
 .badge-falta-nao,
 .badge-folga,
-.badge-atestado {
+.badge-atestado,
+.badge-ferias {
   display: inline-block;
   padding: 5px 10px;
   border-radius: 999px;
@@ -175,6 +206,16 @@
   color: #ffb347;
   border: 1px solid rgba(255, 165, 0, 0.4);
 }
+
+.badge-ferias {
+  background: rgba(139, 92, 246, 0.18);
+  color: #d8b4fe;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+}
+
+/* =========================
+   BOTÕES
+========================= */
 
 .btn-atestado {
   margin-left: 8px;
@@ -307,6 +348,11 @@
   background: rgba(59, 130, 246, 0.06);
 }
 
+.ferias-box {
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: rgba(139, 92, 246, 0.08);
+}
+
 .falta-toggle-info {
   flex: 1;
 }
@@ -374,6 +420,14 @@
   background-color: #3b82f6;
 }
 
+.slider-ferias {
+  background-color: #475569;
+}
+
+.switch input:checked + .slider-ferias {
+  background-color: #8b5cf6;
+}
+
 .switch-status {
   min-width: 42px;
   text-align: center;
@@ -391,6 +445,10 @@
 
 .switch-status.folga {
   color: #93c5fd;
+}
+
+.switch-status.ferias {
+  color: #c084fc;
 }
 
 .modalActions {
@@ -561,4 +619,13 @@
 
 .btn-padrao:hover {
   background: #6d28d9;
+}
+
+.btn-excel {
+  background: #1d6f42;
+  color: #fff;
+}
+
+.btn-excel:hover {
+  background: #165c36;
 }

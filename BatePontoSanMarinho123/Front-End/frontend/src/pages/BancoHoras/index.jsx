@@ -56,10 +56,11 @@ export default function BancoHoras() {
         `/banco-horas?mes=${mes}&ano=${ano}&funcionario_id=${funcionarioId}`
       );
 
-      setDados(response.data);
+      const lista = Array.isArray(response.data) ? response.data : [];
+      setDados(lista);
 
       const inicial = {};
-      response.data.forEach((item) => {
+      lista.forEach((item) => {
         inicial[item.funcionario_id] = {
           ajuste_minutos: item.ajuste_minutos || 0,
           observacao: item.observacao || "",
@@ -114,6 +115,41 @@ export default function BancoHoras() {
     } catch (err) {
       console.error("Erro ao gerar PDF do banco de horas:", err);
       abrirModal("Erro", "Erro ao gerar PDF.", true);
+    }
+  };
+
+  const gerarExcel = async () => {
+    if (!mes || !ano) {
+      abrirModal("Atenção", "Selecione mês e ano.", true);
+      return;
+    }
+
+    try {
+      const rota = `/banco-horas/excel?mes=${mes}&ano=${ano}&funcionario_id=${funcionarioId}`;
+
+      const response = await api.get(rota, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        funcionarioId === "todos"
+          ? `banco_horas_todos_${mes}_${ano}.xlsx`
+          : `banco_horas_${funcionarioId}_${mes}_${ano}.xlsx`;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Erro ao gerar Excel do banco de horas:", err);
+      abrirModal("Erro", "Erro ao gerar Excel.", true);
     }
   };
 
@@ -183,6 +219,10 @@ export default function BancoHoras() {
 
         <button className="bhoras-btn" onClick={gerarPdf}>
           Gerar PDF
+        </button>
+
+        <button className="bhoras-btn bhoras-btn-excel" onClick={gerarExcel}>
+          Gerar Excel
         </button>
       </div>
 
@@ -269,20 +309,20 @@ export default function BancoHoras() {
         </table>
       </div>
 
-       {modalOpen && (
-      <div className="modal-ponto">
-        <div className={`modal-box ${modalErro ? "modal-box-erro" : ""}`}>
-          {modalErro ? (
-            <FaTimesCircle className="modal-icon-erro" />
-          ) : (
-            <FaCheckCircle className="modal-icon" />
-          )}
-    
-          <h3>{modalTitulo}</h3>
-          <p>{modalTexto}</p>
+      {modalOpen && (
+        <div className="modal-ponto">
+          <div className={`modal-box ${modalErro ? "modal-box-erro" : ""}`}>
+            {modalErro ? (
+              <FaTimesCircle className="modal-icon-erro" />
+            ) : (
+              <FaCheckCircle className="modal-icon" />
+            )}
+
+            <h3>{modalTitulo}</h3>
+            <p>{modalTexto}</p>
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 }

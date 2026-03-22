@@ -1,3 +1,4 @@
+import os
 import face_recognition
 import base64
 import numpy as np
@@ -15,13 +16,25 @@ def decode_image(base64_str):
     return np.array(img)
 
 def get_face_embedding(image_np):
-    faces = face_recognition.face_encodings(image_np)
+    print("Imagem recebida shape:", image_np.shape)
+
+    faces_locations = face_recognition.face_locations(image_np)
+    print("Rostos detectados:", len(faces_locations))
+
+    if len(faces_locations) == 0:
+        return None
+
+    faces = face_recognition.face_encodings(image_np, faces_locations)
 
     if len(faces) == 0:
         return None
-    
+
     return faces[0]
 
-def compare_embeddings(a, b, tolerance=0.45):
+def compare_embeddings(a, b, tolerance=None):
+    if tolerance is None:
+        tolerance = float(os.getenv("TOLERANCE", "0.6"))
+
+    b = np.array(b)
     dist = np.linalg.norm(a - b)
     return dist <= tolerance

@@ -43,7 +43,6 @@ export default function Login() {
         <h2 className="loginTitle">Login Administrativo</h2>
 
         <form className="loginForm" onSubmit={onSubmit}>
-
           <div className="floatLabel">
             <input
               type="text"
@@ -66,6 +65,14 @@ export default function Login() {
 
           <button className="loginButton" type="submit" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
+          </button>
+
+          <button
+            className="registerButton"
+            type="button"
+            onClick={() => navigate("/register")}
+          >
+            Cadastrar administrador
           </button>
         </form>
 

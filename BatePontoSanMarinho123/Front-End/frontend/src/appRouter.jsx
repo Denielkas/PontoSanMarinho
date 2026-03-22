@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Reconhecimento from "./pages/Reconhecimento";
 import CadastrarRosto from "./pages/CadastrarRosto";
@@ -27,10 +28,11 @@ export default function AppRouter() {
         {/* PÚBLICAS */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/reconhecimento" element={<Reconhecimento />} />
         <Route path="/escolher-batida" element={<EscolherBatida />} />
 
-        {/* 👉 CONSULTA DE PONTO POR CPF */}
+        {/* CONSULTA DE PONTO */}
         <Route path="/buscar-pontos" element={<BuscarPontos />} />
         <Route path="/resultado-pontos" element={<ResultadoPontos />} />
 
@@ -48,7 +50,6 @@ export default function AppRouter() {
           <Route path="registrar-funcionario" element={<RegistrarFuncionario />} />
           <Route path="funcionarios" element={<ListarFuncionarios />} />
           <Route path="cadastrar-rosto/:id" element={<CadastrarRosto />} />
-
           <Route path="relatorio" element={<RelatorioFuncionario />} />
           <Route path="manual" element={<InserirPontoManual />} />
           <Route path="atestado" element={<CadastrarAtestado />} />

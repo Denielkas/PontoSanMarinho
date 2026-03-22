@@ -34,6 +34,7 @@ export default function RelatorioFuncionario() {
     saida: "",
     falta: false,
     folga: false,
+    ferias: false,
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -69,7 +70,7 @@ export default function RelatorioFuncionario() {
 
   const calcularSaldoTexto = (resultado) => {
     const totalMinutos = resultado.reduce((acc, r) => {
-      if (r.folga) return acc;
+      if (r.folga || r.ferias) return acc;
       return acc + (Number(r.saldo_bruto) || 0);
     }, 0);
 
@@ -139,6 +140,47 @@ export default function RelatorioFuncionario() {
     }
   };
 
+  const gerarExcel = async () => {
+    if (!funcId || !mes || !ano) {
+      abrirModal("Atenção", "Selecione funcionário, mês e ano.", true);
+      return;
+    }
+
+    try {
+      let rota = "";
+
+      if (funcId === "todos") {
+        rota = `/relatorio/excel/todos?mes=${mes}&ano=${ano}`;
+      } else {
+        rota = `/relatorio/excel/${funcId}?mes=${mes}&ano=${ano}`;
+      }
+
+      const response = await api.get(rota, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        funcId === "todos"
+          ? `relatorio_todos_${mes}_${ano}.xlsx`
+          : `relatorio_${funcId}_${mes}_${ano}.xlsx`;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Erro ao gerar Excel:", err);
+      abrirModal("Erro", "Erro ao gerar Excel.", true);
+    }
+  };
+
   const lancarHorarioPadraoMes = async () => {
     if (!funcId || funcId === "todos" || !mes || !ano) {
       abrirModal(
@@ -156,7 +198,7 @@ export default function RelatorioFuncionario() {
     const nomeFuncionario = funcionarioSelecionado?.nome || "funcionário";
 
     const confirmado = window.confirm(
-      `Deseja lançar o horário padrão salvo no banco de dados para TODOS os dias de ${mes}/${ano} do funcionário ${nomeFuncionario}?\n\nDias que já possuem pontos, atestado, falta ou folga serão ignorados.`
+      `Deseja lançar o horário padrão salvo no banco de dados para TODOS os dias de ${mes}/${ano} do funcionário ${nomeFuncionario}?\n\nDias que já possuem pontos, atestado, falta, folga ou férias serão ignorados.`
     );
 
     if (!confirmado) return;
@@ -200,6 +242,7 @@ export default function RelatorioFuncionario() {
       saida: linha.saida !== "--:--" ? linha.saida : "",
       falta: !!linha.falta,
       folga: !!linha.folga,
+      ferias: !!linha.ferias,
     });
 
     setEditOpen(true);
@@ -207,16 +250,19 @@ export default function RelatorioFuncionario() {
 
   const salvarAlteracao = async () => {
     try {
+      const bloqueado = editData.falta || editData.folga || editData.ferias;
+
       await api.put("/ponto/ajustar", {
         funcionario_id: funcId,
         data: editData.data,
         ids_originais: editData.ids_originais,
-        entrada: editData.falta || editData.folga ? "" : editData.entrada,
-        intervalo: editData.falta || editData.folga ? "" : editData.intervalo_inicio,
-        retorno: editData.falta || editData.folga ? "" : editData.intervalo_fim,
-        saida: editData.falta || editData.folga ? "" : editData.saida,
+        entrada: bloqueado ? "" : editData.entrada,
+        intervalo: bloqueado ? "" : editData.intervalo_inicio,
+        retorno: bloqueado ? "" : editData.intervalo_fim,
+        saida: bloqueado ? "" : editData.saida,
         falta: editData.falta,
         folga: editData.folga,
+        ferias: editData.ferias,
       });
 
       setEditOpen(false);
@@ -327,6 +373,10 @@ export default function RelatorioFuncionario() {
           Gerar PDF
         </button>
 
+        <button className="relatorio-btn btn-excel" onClick={gerarExcel}>
+          Gerar Excel
+        </button>
+
         <button
           className="relatorio-btn btn-padrao"
           onClick={lancarHorarioPadraoMes}
@@ -378,7 +428,9 @@ export default function RelatorioFuncionario() {
                 key={`${d.funcionario_id}-${d.data}-${i}`}
                 className={`${d.atestado ? "linha-atestado" : ""} ${
                   d.falta ? "linha-falta" : ""
-                } ${d.folga ? "linha-folga" : ""}`}
+                } ${d.folga ? "linha-folga" : ""} ${
+                  d.ferias ? "linha-ferias" : ""
+                }`}
               >
                 <td>
                   <strong>{d.data}</strong>
@@ -398,12 +450,14 @@ export default function RelatorioFuncionario() {
                       ? "#f59e0b"
                       : d.folga
                       ? "#3b82f6"
+                      : d.ferias
+                      ? "#8b5cf6"
                       : d.saldo_bruto < 0
                       ? "#e74c3c"
                       : "#27ae60",
                   }}
                 >
-                  {d.folga
+                  {d.folga || d.ferias
                     ? "+0h 0m"
                     : `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
                         Math.abs(d.saldo_bruto) / 60
@@ -415,6 +469,8 @@ export default function RelatorioFuncionario() {
                     <span className="badge-falta-sim">Falta</span>
                   ) : d.folga ? (
                     <span className="badge-folga">Folga</span>
+                  ) : d.ferias ? (
+                    <span className="badge-ferias">Férias</span>
                   ) : d.atestado ? (
                     <span className="badge-atestado">Atestado</span>
                   ) : (
@@ -501,6 +557,7 @@ export default function RelatorioFuncionario() {
                       ...editData,
                       falta: e.target.checked,
                       folga: e.target.checked ? false : editData.folga,
+                      ferias: e.target.checked ? false : editData.ferias,
                     })
                   }
                 />
@@ -533,6 +590,7 @@ export default function RelatorioFuncionario() {
                       ...editData,
                       folga: e.target.checked,
                       falta: e.target.checked ? false : editData.falta,
+                      ferias: e.target.checked ? false : editData.ferias,
                     })
                   }
                 />
@@ -546,9 +604,44 @@ export default function RelatorioFuncionario() {
               </span>
             </div>
 
+            <div className="falta-toggle-box ferias-box">
+              <div className="falta-toggle-info">
+                <span className="falta-label">Férias</span>
+                <small>
+                  Se marcar <strong>Sim</strong>, o dia ficará como{" "}
+                  <strong>férias</strong>, com <strong>saldo zerado</strong> e
+                  destaque em roxo.
+                </small>
+              </div>
+
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={editData.ferias}
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      ferias: e.target.checked,
+                      falta: e.target.checked ? false : editData.falta,
+                      folga: e.target.checked ? false : editData.folga,
+                    })
+                  }
+                />
+                <span className="slider slider-ferias"></span>
+              </label>
+
+              <span
+                className={editData.ferias ? "switch-status ferias" : "switch-status nao"}
+              >
+                {editData.ferias ? "Sim" : "Não"}
+              </span>
+            </div>
+
             <div
               className={`modalGrid ${
-                editData.falta || editData.folga ? "campos-desabilitados" : ""
+                editData.falta || editData.folga || editData.ferias
+                  ? "campos-desabilitados"
+                  : ""
               }`}
             >
               <label>
@@ -556,7 +649,7 @@ export default function RelatorioFuncionario() {
                 <input
                   type="time"
                   value={editData.entrada}
-                  disabled={editData.falta || editData.folga}
+                  disabled={editData.falta || editData.folga || editData.ferias}
                   onChange={(e) =>
                     setEditData({
                       ...editData,
@@ -571,7 +664,7 @@ export default function RelatorioFuncionario() {
                 <input
                   type="time"
                   value={editData.intervalo_inicio}
-                  disabled={editData.falta || editData.folga}
+                  disabled={editData.falta || editData.folga || editData.ferias}
                   onChange={(e) =>
                     setEditData({
                       ...editData,
@@ -586,7 +679,7 @@ export default function RelatorioFuncionario() {
                 <input
                   type="time"
                   value={editData.intervalo_fim}
-                  disabled={editData.falta || editData.folga}
+                  disabled={editData.falta || editData.folga || editData.ferias}
                   onChange={(e) =>
                     setEditData({
                       ...editData,
@@ -601,7 +694,7 @@ export default function RelatorioFuncionario() {
                 <input
                   type="time"
                   value={editData.saida}
-                  disabled={editData.falta || editData.folga}
+                  disabled={editData.falta || editData.folga || editData.ferias}
                   onChange={(e) =>
                     setEditData({
                       ...editData,

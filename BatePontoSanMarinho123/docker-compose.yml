@@ -1,0 +1,70 @@
+services:
+  postgres-san:
+    image: postgres:18
+    container_name: postgres-san
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: bateponto
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    volumes:
+      - postgres-san-volume:/var/lib/postgresql
+    restart: always
+
+  back:
+    container_name: back-san
+    build: ./Back-End
+    restart: always
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres-san
+    env_file:
+      - ./Back-End/.env
+    environment:
+      TZ: America/Sao_Paulo
+    volumes:
+      - back-uploads:/app/uploads
+
+  face:
+    container_name: face-san
+    build: ./face_service
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres-san
+    env_file:
+      - ./face_service/.env
+
+  front:
+    container_name: front-san
+    build: ./Front-End/frontend
+    depends_on:
+      - back
+      - face
+    env_file:
+      - ./Front-End/frontend/.env
+    volumes:
+      - front-volume:/var/www/html
+
+  nginx:
+    container_name: nginx-san
+    build: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - front-volume:/var/www/html
+    depends_on:
+      - postgres-san
+      - back
+      - front
+      - face
+
+volumes:
+  postgres-san-volume:
+  front-volume:
+  back-uploads:

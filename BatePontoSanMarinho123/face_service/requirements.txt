@@ -1,7 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
-psycopg2
+psycopg2-binary
 numpy
 pillow
 face_recognition

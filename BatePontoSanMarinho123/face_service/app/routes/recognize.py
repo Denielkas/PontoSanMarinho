@@ -1,13 +1,16 @@
 from fastapi import APIRouter
 from app.models import FaceRecognize
 from app.utils_face import decode_image, get_face_embedding, compare_embeddings
-from app.database import get_db
+from app.database import get_db, garantir_tabela_face
 
 router = APIRouter()
+
 
 @router.post("/recognize")
 def recognize(data: FaceRecognize):
     try:
+        garantir_tabela_face()
+
         img = decode_image(data.image_base64)
         emb = get_face_embedding(img)
 

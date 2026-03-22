@@ -258,3 +258,12 @@
   color: #e74c3c;
   margin-bottom: 10px;
 }
+
+.btn-excel {
+  background: #1d6f42;
+  color: #fff;
+}
+
+.btn-excel:hover {
+  background: #165c36;
+}

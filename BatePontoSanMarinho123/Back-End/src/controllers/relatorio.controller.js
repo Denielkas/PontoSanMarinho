@@ -1,6 +1,76 @@
 const pool = require("../database/pool");
 const { calcularDia, formatarSaldo } = require("../utils/calculos");
 
+/* =========================================
+   GARANTE TABELA FUNCOES
+========================================= */
+async function garantirTabelaFuncoes() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS funcoes (
+      id BIGSERIAL PRIMARY KEY,
+      nome VARCHAR(150) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+}
+
+/* =========================================
+   GARANTE TABELA FUNCIONARIOS
+========================================= */
+async function garantirTabelaFuncionarios() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS funcionarios (
+      id BIGSERIAL PRIMARY KEY,
+      nome VARCHAR(200) NOT NULL,
+      cpf VARCHAR(20) NOT NULL UNIQUE,
+      chegada TIME,
+      intervalo_inicio TIME,
+      intervalo_fim TIME,
+      saida TIME,
+      funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  try {
+    await pool.query(`
+      ALTER TABLE funcionarios
+      ADD COLUMN IF NOT EXISTS funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL
+    `);
+
+    await pool.query(`
+      ALTER TABLE funcionarios
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+    `);
+
+    await pool.query(`
+      ALTER TABLE funcionarios
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+    `);
+  } catch (err) {
+    console.log("Colunas da tabela funcionarios já existem ou não foi necessário alterar.");
+  }
+}
+
+/* =========================================
+   GARANTE TABELA PONTOS
+========================================= */
+async function garantirTabelaPontos() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pontos (
+      id BIGSERIAL PRIMARY KEY,
+      funcionario_id BIGINT NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
+      tipo TEXT NOT NULL,
+      marcado_em TIMESTAMP DEFAULT NOW(),
+      CHECK (tipo IN ('entrada','intervalo_inicio','intervalo_fim','saida','auto'))
+    );
+  `);
+}
+
+/* =========================================
+   GARANTE TABELA FALTAS_AJUSTES
+========================================= */
 async function garantirTabelaFaltas() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS faltas_ajustes (
@@ -9,6 +79,7 @@ async function garantirTabelaFaltas() {
       data DATE NOT NULL,
       falta BOOLEAN NOT NULL DEFAULT false,
       folga BOOLEAN NOT NULL DEFAULT false,
+      ferias BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW(),
       UNIQUE (funcionario_id, data)
@@ -20,13 +91,45 @@ async function garantirTabelaFaltas() {
       ALTER TABLE faltas_ajustes
       ADD COLUMN IF NOT EXISTS folga BOOLEAN NOT NULL DEFAULT false
     `);
+
+    await pool.query(`
+      ALTER TABLE faltas_ajustes
+      ADD COLUMN IF NOT EXISTS ferias BOOLEAN NOT NULL DEFAULT false
+    `);
   } catch (err) {
-    console.log("Coluna folga já existe ou não foi necessário alterar.");
+    console.log("Colunas já existem ou não foi necessário alterar.");
   }
 }
 
-async function gerarRelatorioFuncionario(id, mes, ano) {
+/* =========================================
+   GARANTE TABELA ATESTADOS
+========================================= */
+async function garantirTabelaAtestados() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS atestados (
+      id BIGSERIAL PRIMARY KEY,
+      funcionario_id BIGINT NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
+      data_inicio DATE NOT NULL,
+      data_fim DATE NOT NULL,
+      arquivo TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+}
+
+/* =========================================
+   GARANTE TUDO NECESSÁRIO
+========================================= */
+async function garantirTabelas() {
+  await garantirTabelaFuncoes();
+  await garantirTabelaFuncionarios();
+  await garantirTabelaPontos();
   await garantirTabelaFaltas();
+  await garantirTabelaAtestados();
+}
+
+async function gerarRelatorioFuncionario(id, mes, ano) {
+  await garantirTabelas();
 
   const mesNum = Number(mes);
   const anoNum = Number(ano);
@@ -89,7 +192,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
 
   const faltasQuery = await pool.query(
     `
-    SELECT data, falta, folga
+    SELECT data, falta, folga, ferias
     FROM faltas_ajustes
     WHERE funcionario_id = $1
       AND EXTRACT(MONTH FROM data) = $2
@@ -103,14 +206,12 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
     const d = new Date(item.data);
     d.setHours(0, 0, 0, 0);
 
-    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(d.getDate()).padStart(2, "0")}`;
+    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
     mapaAjustes[chave] = {
       falta: !!item.falta,
       folga: !!item.folga,
+      ferias: !!item.ferias,
     };
   }
 
@@ -145,10 +246,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
 
   function formatarChaveDia(data) {
     const d = zerarHora(data);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(d.getDate()).padStart(2, "0")}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
   function formatarHora(data) {
@@ -403,9 +501,15 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
     const turnosDoDia = turnosPorDia[chaveDia] || [];
     const arquivoAtestado = diaTemAtestado(dataAtual);
 
-    const ajusteDia = mapaAjustes[chaveDia] || { falta: false, folga: false };
+    const ajusteDia = mapaAjustes[chaveDia] || {
+      falta: false,
+      folga: false,
+      ferias: false,
+    };
+
     const faltaDoDia = !!ajusteDia.falta;
     const folgaDoDia = !!ajusteDia.folga;
+    const feriasDoDia = !!ajusteDia.ferias;
     const atestadoDoDia = !!arquivoAtestado;
 
     if (faltaDoDia) {
@@ -439,6 +543,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
         arquivo_atestado: null,
         falta: true,
         folga: false,
+        ferias: false,
         ids_originais: {},
       });
 
@@ -462,6 +567,31 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
         arquivo_atestado: null,
         falta: false,
         folga: true,
+        ferias: false,
+        ids_originais: {},
+      });
+
+      continue;
+    }
+
+    if (feriasDoDia) {
+      final.push({
+        funcionario_id: funcionario.id,
+        data: dataAtual.toLocaleDateString("pt-BR"),
+        nome: funcionario.nome,
+        cpf: funcionario.cpf,
+        entrada: "--:--",
+        intervalo_inicio: "--:--",
+        intervalo_fim: "--:--",
+        saida: "--:--",
+        total_horas: "--",
+        saldo_bruto: 0,
+        atraso_total: formatarSaldo(0),
+        atestado: false,
+        arquivo_atestado: null,
+        falta: false,
+        folga: false,
+        ferias: true,
         ids_originais: {},
       });
 
@@ -557,6 +687,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
           arquivo_atestado: arquivoAtestado || null,
           falta: false,
           folga: false,
+          ferias: false,
           ids_originais: turno.ids_originais || {},
         });
       });
@@ -571,12 +702,13 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
         intervalo_fim: "--:--",
         saida: "--:--",
         total_horas: "--",
-        saldo_bruto: atestadoDoDia ? 0 : 0,
+        saldo_bruto: 0,
         atraso_total: formatarSaldo(0),
         atestado: atestadoDoDia,
         arquivo_atestado: arquivoAtestado || null,
         falta: false,
         folga: false,
+        ferias: false,
         ids_originais: {},
       });
     }
@@ -600,6 +732,8 @@ const relatorioFuncionario = async (req, res) => {
 
 const relatorioTodosFuncionarios = async (req, res) => {
   try {
+    await garantirTabelas();
+
     const { mes, ano } = req.query;
 
     const funcionariosQuery = await pool.query(`

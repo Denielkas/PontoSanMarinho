@@ -1,0 +1,148 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* ===== TELA ===== */
+.loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-image: url("../../assets/logo/hotel-fundo.jpg");
+  background-size: cover;
+  background-position: center calc(55% + 40px);
+  background-attachment: fixed;
+}
+
+/* ===== CARD ===== */
+.loginCard {
+  width: min(420px, 92vw);
+  padding: 24px;
+  border-radius: 0 120px 0 120px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+
+  margin-top: 35vh;
+}
+
+/* ===== TITULO ===== */
+.loginTitle {
+  margin: 0 0 16px;
+  text-align: center;
+  color: #0d6efd;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* ===== FORM ===== */
+.loginForm {
+  display: grid;
+  gap: 16px;
+}
+
+/* ==========================
+      LABEL FLUTUANTE
+========================== */
+
+.floatLabel {
+  position: relative;
+  width: 95%;
+}
+
+.floatLabel input {
+  width: 100%;
+  padding: 16px 12px 10px;
+  border: 3px solid #0d6efd;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.floatLabel input:focus {
+  border-color: #0554d0;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.3);
+}
+
+/* LABEL padrão */
+.floatLabel label {
+  position: absolute;
+  left: 12px;
+  top: 14px;
+  color: #6e6e6e;
+  font-size: 16px;
+  pointer-events: none;
+  transition: all 0.25s ease;
+  background: transparent;
+}
+
+/* LABEL focado */
+.floatLabel input:focus + label {
+  top: -20px;
+  left: 3px;
+  background: #0d6efd;
+  padding: 0 6px;
+  font-size: 17px;
+  color: #fff;
+  border-radius: 4px;
+}
+
+/* LABEL preenchido */
+.floatLabel label.filled {
+  top: -15px;
+  left: 3px;
+  background: #0d6efd;
+  padding: 0 6px;
+  font-size: 13px;
+  color: #fff;
+  border-radius: 4px;
+}
+
+/* ===== BOTÃO PRINCIPAL ===== */
+.loginButton {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #0d6efd;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.loginButton:hover {
+  background: #0554d0;
+}
+
+/* ===== BOTÃO VOLTAR ===== */
+.registerButton {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #6c757d;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.registerButton:hover {
+  background: #555;
+}
+
+/* ===== Mensagem ===== */
+.loginMsg {
+  margin-top: 12px;
+  min-height: 20px;
+  text-align: center;
+  color: #fff;
+  font-weight: 500;
+}

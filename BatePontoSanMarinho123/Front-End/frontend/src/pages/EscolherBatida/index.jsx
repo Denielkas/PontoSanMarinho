@@ -1,6 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../../services/api";
-import { FaSignInAlt, FaCoffee, FaUndoAlt, FaSignOutAlt, FaCheckCircle } from "react-icons/fa";
+import {
+  FaSignInAlt,
+  FaCoffee,
+  FaUndoAlt,
+  FaSignOutAlt,
+  FaCheckCircle,
+} from "react-icons/fa";
 import "./EscolherBatida.css";
 import { useEffect, useState } from "react";
 
@@ -10,6 +16,7 @@ export default function EscolherBatida() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTexto, setModalTexto] = useState("");
+  const [modalTitulo, setModalTitulo] = useState("Registrado com sucesso!");
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [permissoes, setPermissoes] = useState({
     entrada: false,
@@ -28,9 +35,26 @@ export default function EscolherBatida() {
           return;
         }
 
-        const { data } = await api.get(`/ponto/status/${funcionario.id}`);
-        setPermissoes(data?.permissoes || {});
+        const { data } = await api.get(
+          `/ponto/status-batidas/${funcionario.id}`
+        );
+
+        setPermissoes(
+          data?.permissoes || {
+            entrada: false,
+            intervalo_inicio: false,
+            intervalo_fim: false,
+            saida: false,
+          }
+        );
       } catch (err) {
+        console.error("Erro ao carregar status das batidas:", err);
+        setPermissoes({
+          entrada: false,
+          intervalo_inicio: false,
+          intervalo_fim: false,
+          saida: false,
+        });
       } finally {
         setLoadingStatus(false);
       }
@@ -59,6 +83,7 @@ export default function EscolherBatida() {
         tipo,
       });
 
+      setModalTitulo("Registrado com sucesso!");
       setModalTexto(nomes[tipo]);
       setModalOpen(true);
 
@@ -67,13 +92,15 @@ export default function EscolherBatida() {
         navigate("/");
       }, 1000);
     } catch (err) {
+      console.error("Erro ao bater ponto:", err);
 
+      setModalTitulo("Atenção");
       setModalTexto(err.response?.data?.error || "Erro ao bater ponto");
       setModalOpen(true);
 
       setTimeout(() => {
         setModalOpen(false);
-      }, 1200);
+      }, 1500);
     }
   };
 
@@ -95,7 +122,9 @@ export default function EscolherBatida() {
 
           <button
             onClick={() => baterPonto("intervalo_inicio")}
-            className={`btn intervalo ${!permissoes.intervalo_inicio ? "disabled" : ""}`}
+            className={`btn intervalo ${
+              !permissoes.intervalo_inicio ? "disabled" : ""
+            }`}
             disabled={!permissoes.intervalo_inicio || loadingStatus}
           >
             <FaCoffee className="icon" />
@@ -104,7 +133,9 @@ export default function EscolherBatida() {
 
           <button
             onClick={() => baterPonto("intervalo_fim")}
-            className={`btn retorno ${!permissoes.intervalo_fim ? "disabled" : ""}`}
+            className={`btn retorno ${
+              !permissoes.intervalo_fim ? "disabled" : ""
+            }`}
             disabled={!permissoes.intervalo_fim || loadingStatus}
           >
             <FaUndoAlt className="icon" />
@@ -126,7 +157,7 @@ export default function EscolherBatida() {
         <div className="modal-ponto">
           <div className="modal-box">
             <FaCheckCircle className="modal-icon" />
-            <h3>Registrado com sucesso!</h3>
+            <h3>{modalTitulo}</h3>
             <p>{modalTexto}</p>
           </div>
         </div>

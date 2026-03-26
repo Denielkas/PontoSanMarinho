@@ -1,38 +1,46 @@
 /* TELA TOTAL */
 .recScreen {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   background: #0b0f19;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 /* CARD CENTRAL */
 .recCard {
-  width: min(680px, 90vw);
+  width: min(680px, 100%);
   padding: 16px 20px;
-  border-radius: 12px;
+  border-radius: 16px;
   background: #fff;
   color: #111;
-  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 /* TÍTULO */
 .recTitle {
   text-align: center;
-  margin: 0 0 10px 0;
+  margin: 0 0 14px 0;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: #1a1a1a;
 }
 
 /* ÁREA DO VÍDEO */
 .videoWrap {
   position: relative;
-  border-radius: 12px;
+  width: 100%;
+  border-radius: 16px;
   overflow: hidden;
   background: #000;
   display: flex;
   justify-content: center;
   align-items: center;
   aspect-ratio: 4 / 3;
+  min-height: 260px;
+  max-height: 72dvh;
 }
 
 .video {
@@ -40,40 +48,44 @@
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center top;
+  object-position: center center;
   background: #000;
 }
 
 /* CONTADOR */
 .count {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(0,0,0,.65);
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  padding: 6px 12px;
+  padding: 8px 14px;
   font-weight: 700;
   border-radius: 999px;
   font-size: 14px;
+  z-index: 2;
 }
 
 /* MENSAGEM */
 .recMsg {
   text-align: center;
-  margin-top: 10px;
-  font-size: 15px;
+  margin-top: 14px;
+  font-size: clamp(15px, 2.2vw, 20px);
+  font-weight: 600;
+  color: #445;
 }
 
 /* BOTÃO CANCELAR */
 .recCancel {
-  margin-top: 10px;
-  margin-left: auto;
-  padding: 10px 16px;
-  border-radius: 8px;
+  display: block;
+  margin: 16px auto 0;
+  padding: 12px 18px;
+  border-radius: 10px;
   border: none;
   background: #d9534f;
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 15px;
   cursor: pointer;
   transition: 0.2s;
 }
@@ -86,18 +98,19 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.5);
+  background: rgba(0, 0, 0, 0.5);
   display: grid;
   place-items: center;
   z-index: 100;
+  padding: 16px;
 }
 
 .modalCard {
   background: #fff;
-  width: min(420px, 90vw);
+  width: min(420px, 100%);
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,.3);
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 /* BOTÕES DO MODAL */
@@ -106,6 +119,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 16px;
+  flex-wrap: wrap;
 }
 
 .modalActions button {
@@ -113,6 +127,7 @@
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid #d0d7e2;
+  font-weight: 600;
 }
 
 .modalActions button:last-child {
@@ -125,11 +140,11 @@
 .successCard {
   background: #101826;
   color: #fff;
-  width: min(420px, 90vw);
+  width: min(420px, 100%);
   padding: 22px;
-  border-radius: 12px;
+  border-radius: 14px;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,.4);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .successCard button {
@@ -140,115 +155,127 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  font-weight: 700;
 }
 
 /* ========================================================= */
-/* TABLET */
+/* TABLET RETRATO E LANDSCAPE */
 /* ========================================================= */
-@media (min-width: 600px) and (max-width: 800px) {
-
+@media (min-width: 600px) and (max-width: 1024px) {
   .recScreen {
-    width: 100vw;
-    height: 100vh;
-    background: #0b0f19;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
+    padding: 24px;
   }
 
   .recCard {
-    width: 90vw;
-    max-width: 950px;
-    padding: 28px 30px;
-    border-radius: 18px;
-    background: #fff;
-    text-align: center;
-    box-shadow: 0 12px 40px rgba(0,0,0,.45);
-    font-size: 20px;
+    width: min(820px, 94vw);
+    padding: 24px;
+    border-radius: 20px;
   }
 
   .recTitle {
-    font-size: 34px;
-    font-weight: 900;
     margin-bottom: 18px;
-    color: #111;
+    font-size: clamp(28px, 4vw, 40px);
   }
 
   .videoWrap {
-    width: 100%;
-    height: 78vh;
-    min-height: 560px;
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    background: #000;
-    margin-bottom: 18px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    aspect-ratio: 4 / 3;
+    min-height: 360px;
+    max-height: 68dvh;
+    border-radius: 18px;
   }
 
   .video {
-    width: 100%;
-    height: 100%;
     object-fit: cover;
-    object-position: center top;
-    background: #000;
+    object-position: center center;
   }
 
   .count {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(0,0,0,.75);
-    padding: 12px 22px;
-    border-radius: 50px;
-    font-size: 26px;
-    font-weight: 800;
-    color: white;
+    top: 16px;
+    right: 16px;
+    padding: 10px 18px;
+    font-size: 18px;
   }
 
   .recMsg {
-    font-size: 22px;
-    font-weight: 600;
-    margin-top: 10px;
-    color: #333;
+    margin-top: 16px;
+    font-size: clamp(18px, 2.2vw, 24px);
   }
 
   .recCancel {
-    margin-top: 16px;
-    padding: 14px 26px;
-    background: #d9534f;
-    color: #fff;
-    font-size: 20px;
-    font-weight: 800;
+    margin-top: 18px;
+    padding: 14px 24px;
+    font-size: 18px;
     border-radius: 12px;
-    border: none;
-    cursor: pointer;
-  }
-
-  .recCancel:hover {
-    background: #c9302c;
   }
 
   .modalCard,
   .successCard {
-    width: min(480px, 90vw);
-    padding: 30px;
-    border-radius: 14px;
-    font-size: 22px;
+    width: min(520px, 92vw);
+    padding: 28px;
+    border-radius: 16px;
   }
 
   .modalCard h3,
   .successCard h3 {
     font-size: 28px;
-    font-weight: 800;
   }
 
-  .modalActions button {
-    font-size: 20px;
-    padding: 12px 20px;
+  .modalActions button,
+  .successCard button {
+    font-size: 18px;
+    padding: 12px 18px;
+  }
+}
+
+/* ========================================================= */
+/* TABLET EM RETRATO */
+/* ========================================================= */
+@media (min-width: 600px) and (max-width: 1024px) and (orientation: portrait) {
+  .recCard {
+    width: min(760px, 94vw);
+  }
+
+  .videoWrap {
+    aspect-ratio: 3 / 4;
+    max-height: 62dvh;
+  }
+
+  .video {
+    object-fit: cover;
+    object-position: center;
+  }
+}
+
+/* ========================================================= */
+/* TELAS MENORES */
+/* ========================================================= */
+@media (max-width: 599px) {
+  .recScreen {
+    padding: 12px;
+  }
+
+  .recCard {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .videoWrap {
+    aspect-ratio: 3 / 4;
+    min-height: 240px;
+    max-height: 60dvh;
+  }
+
+  .count {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .recMsg {
+    font-size: 15px;
+  }
+
+  .recCancel {
+    width: 100%;
   }
 }

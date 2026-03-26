@@ -9,7 +9,7 @@ export default function DashboardLayout() {
 
   const logout = () => {
     localStorage.removeItem("token");
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const toggleMenu = () => setOpen(!open);

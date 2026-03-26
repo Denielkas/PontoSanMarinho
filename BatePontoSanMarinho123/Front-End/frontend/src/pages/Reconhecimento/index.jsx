@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import { apiFace } from "../../services/apiFace";
@@ -9,8 +9,10 @@ export default function Reconhecimento() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const frameLoop = useRef(null);
+  const frameLoopRef = useRef(null);
   const streamRef = useRef(null);
+  const workingRef = useRef(false);
+  const confirmOpenRef = useRef(false);
 
   const [msg, setMsg] = useState("Detectando rosto...");
   const [working, setWorking] = useState(false);
@@ -20,77 +22,48 @@ export default function Reconhecimento() {
   const [funcNome, setFuncNome] = useState("");
   const [funcCpf, setFuncCpf] = useState("");
 
-  useEffect(() => {
-    async function iniciarCamera() {
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setMsg("Câmera indisponível neste navegador ou fora de HTTPS.");
-          return;
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: 640,
-            height: 480,
-            facingMode: "user",
-          },
-          audio: false,
-        });
-
-        streamRef.current = stream;
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-
-        startRecognitionLoop();
-      } catch (err) {
-        console.error("Erro ao acessar a câmera:", err);
-        setMsg("Erro ao acessar a câmera");
-      }
+  const stopRecognitionLoop = useCallback(() => {
+    if (frameLoopRef.current) {
+      clearInterval(frameLoopRef.current);
+      frameLoopRef.current = null;
     }
-
-    iniciarCamera();
-
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-
-      if (frameLoop.current) {
-        clearInterval(frameLoop.current);
-      }
-    };
   }, []);
 
-  const captureFrame = () => {
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  const captureFrame = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
     if (!video || !canvas) return null;
     if (!video.videoWidth || !video.videoHeight) return null;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    return canvas.toDataURL("image/jpeg", 0.6);
-  };
+    return canvas.toDataURL("image/jpeg", 0.75);
+  }, []);
 
-  const startRecognitionLoop = () => {
-    if (frameLoop.current) {
-      clearInterval(frameLoop.current);
-    }
+  const startRecognitionLoop = useCallback(() => {
+    stopRecognitionLoop();
 
-    frameLoop.current = setInterval(async () => {
-      if (working || confirmOpen) return;
+    frameLoopRef.current = setInterval(async () => {
+      if (workingRef.current || confirmOpenRef.current) return;
 
       const frame = captureFrame();
       if (!frame) return;
 
+      workingRef.current = true;
       setWorking(true);
 
       try {
@@ -99,15 +72,19 @@ export default function Reconhecimento() {
         });
 
         if (data?.matched && data?.funcionario_id) {
-          clearInterval(frameLoop.current);
+          stopRecognitionLoop();
 
-          setFuncId(data.funcionario_id);
+          setMsg("Rosto reconhecido. Confirmando identidade...");
 
-          const r = await api.get(`/funcionarios/public/${data.funcionario_id}`);
+          const funcionarioId = data.funcionario_id;
+          setFuncId(funcionarioId);
 
-          setFuncNome(r.data.nome);
-          setFuncCpf(r.data.cpf);
+          const response = await api.get(`/funcionarios/public/${funcionarioId}`);
 
+          setFuncNome(response.data?.nome || "");
+          setFuncCpf(response.data?.cpf || "");
+
+          confirmOpenRef.current = true;
           setConfirmOpen(true);
           setMsg("Confirme sua identidade");
         } else {
@@ -115,13 +92,73 @@ export default function Reconhecimento() {
         }
       } catch (err) {
         console.error("Erro no reconhecimento:", err);
+
+        if (err?.response?.status === 404) {
+          setMsg("Rota de reconhecimento não encontrada.");
+        } else if (err?.response?.status >= 500) {
+          setMsg("Erro no servidor de reconhecimento.");
+        } else {
+          setMsg("Procurando rosto...");
+        }
       } finally {
+        workingRef.current = false;
         setWorking(false);
       }
-    }, 700);
-  };
+    }, 1200);
+  }, [captureFrame, stopRecognitionLoop]);
+
+  useEffect(() => {
+    async function iniciarCamera() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setMsg("Câmera indisponível neste navegador ou fora de HTTPS.");
+          return;
+        }
+
+        setMsg("Iniciando câmera...");
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "user" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+
+          await videoRef.current.play();
+
+          setMsg("Detectando rosto...");
+          startRecognitionLoop();
+        }
+      } catch (err) {
+        console.error("Erro ao acessar a câmera:", err);
+
+        if (err?.name === "NotAllowedError") {
+          setMsg("Permissão da câmera negada.");
+        } else if (err?.name === "NotFoundError") {
+          setMsg("Nenhuma câmera encontrada.");
+        } else {
+          setMsg("Erro ao acessar a câmera.");
+        }
+      }
+    }
+
+    iniciarCamera();
+
+    return () => {
+      stopRecognitionLoop();
+      stopCamera();
+    };
+  }, [startRecognitionLoop, stopRecognitionLoop, stopCamera]);
 
   const cancelarIdentidade = () => {
+    confirmOpenRef.current = false;
     setConfirmOpen(false);
     setFuncId(null);
     setFuncNome("");
@@ -131,6 +168,8 @@ export default function Reconhecimento() {
   };
 
   const confirmarIdentidade = () => {
+    stopRecognitionLoop();
+
     navigate("/escolher-batida", {
       state: {
         funcionario: {
@@ -148,7 +187,15 @@ export default function Reconhecimento() {
         <h2 className="recTitle">Reconhecimento Facial</h2>
 
         <div className="videoWrap">
-          <video ref={videoRef} className="video" autoPlay muted playsInline />
+          <video
+            ref={videoRef}
+            className="video"
+            autoPlay
+            muted
+            playsInline
+          />
+
+          {working && <div className="count">Lendo...</div>}
         </div>
 
         <div className="recMsg">{msg}</div>
@@ -168,6 +215,7 @@ export default function Reconhecimento() {
             <p>
               <strong>{funcNome}</strong>
             </p>
+
             <p>
               CPF: <strong>{funcCpf}</strong>
             </p>

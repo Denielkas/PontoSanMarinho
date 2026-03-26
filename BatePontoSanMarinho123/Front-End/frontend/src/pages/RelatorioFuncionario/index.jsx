@@ -177,7 +177,11 @@ export default function RelatorioFuncionario() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Erro ao gerar Excel:", err);
-      abrirModal("Erro", "Erro ao gerar Excel.", true);
+      abrirModal(
+        "Erro",
+        err?.response?.data?.error || "Erro ao gerar Excel.",
+        true
+      );
     }
   };
 
@@ -526,7 +530,7 @@ export default function RelatorioFuncionario() {
             </button>
 
             <iframe
-              src={`http://localhost:4000/uploads/${arquivoAtestado}`}
+              src={`/uploads/${arquivoAtestado}`}
               title="Atestado"
               className="pdfViewer"
             />

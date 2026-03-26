@@ -110,11 +110,14 @@ export default function BancoHoras() {
         return;
       }
 
-      const arquivoUrl = `http://localhost:4000${response.data.arquivo}`;
-      window.open(arquivoUrl, "_blank");
+      window.open(response.data.arquivo, "_blank");
     } catch (err) {
       console.error("Erro ao gerar PDF do banco de horas:", err);
-      abrirModal("Erro", "Erro ao gerar PDF.", true);
+      abrirModal(
+        "Erro",
+        err?.response?.data?.error || "Erro ao gerar PDF.",
+        true
+      );
     }
   };
 
@@ -149,7 +152,11 @@ export default function BancoHoras() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Erro ao gerar Excel do banco de horas:", err);
-      abrirModal("Erro", "Erro ao gerar Excel.", true);
+      abrirModal(
+        "Erro",
+        err?.response?.data?.error || "Erro ao gerar Excel.",
+        true
+      );
     }
   };
 

@@ -67,17 +67,6 @@ export default function RelatorioFuncionario() {
     }
   }
 
-  function getArquivoAtestadoUrl(arquivo) {
-    if (!arquivo) return "";
-    return `${window.location.origin}/uploads/${arquivo}`;
-  }
-
-  function abrirAtestado(arquivo) {
-    const url = getArquivoAtestadoUrl(arquivo);
-    setArquivoAtestado(url);
-    setModalAtestado(true);
-  }
-
   function calcularSaldoTexto(resultado) {
     const totalMinutos = resultado.reduce((acc, r) => {
       if (r.folga || r.ferias) return acc;
@@ -332,6 +321,51 @@ export default function RelatorioFuncionario() {
     }
   }
 
+  async function abrirAtestado(arquivo) {
+    if (!arquivo) {
+      abrirModal("Erro", "Arquivo do atestado não encontrado.", true);
+      return;
+    }
+
+    try {
+      const response = await api.get(
+        `/atestado/arquivo/${encodeURIComponent(arquivo)}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      if (response.data?.type && !response.data.type.includes("pdf")) {
+        const texto = await response.data.text();
+        console.error("Resposta inválida ao abrir atestado:", texto);
+        abrirModal("Erro", "A API não retornou um PDF válido.", true);
+        return;
+      }
+
+      if (arquivoAtestado && arquivoAtestado.startsWith("blob:")) {
+        window.URL.revokeObjectURL(arquivoAtestado);
+      }
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      setArquivoAtestado(blobUrl);
+      setModalAtestado(true);
+    } catch (err) {
+      console.error("Erro ao abrir atestado:", err);
+      abrirModal("Erro", "Erro ao abrir atestado.", true);
+    }
+  }
+
+  function fecharModalAtestado() {
+    if (arquivoAtestado && arquivoAtestado.startsWith("blob:")) {
+      window.URL.revokeObjectURL(arquivoAtestado);
+    }
+
+    setArquivoAtestado("");
+    setModalAtestado(false);
+  }
+
   return (
     <div className="relatorio-container">
       <h2 className="relatorio-titulo">Relatório de Frequência</h2>
@@ -547,10 +581,7 @@ export default function RelatorioFuncionario() {
       {modalAtestado && (
         <div className="modalOverlay">
           <div className="modalPdf">
-            <button
-              className="btnFecharPdf"
-              onClick={() => setModalAtestado(false)}
-            >
+            <button className="btnFecharPdf" onClick={fecharModalAtestado}>
               ✖
             </button>
 

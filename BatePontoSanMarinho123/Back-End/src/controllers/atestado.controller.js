@@ -143,7 +143,41 @@ async function removerAtestado(req, res) {
   }
 }
 
+async function visualizarAtestado(req, res) {
+  try {
+    await garantirTabelaAtestados();
+
+    const { arquivo } = req.params;
+
+    if (!arquivo) {
+      return res.status(400).json({
+        error: "Nome do arquivo é obrigatório.",
+      });
+    }
+
+    const nomeSeguro = path.basename(arquivo);
+    const caminhoArquivo = path.join(PASTA_UPLOADS, nomeSeguro);
+
+    if (!fs.existsSync(caminhoArquivo)) {
+      return res.status(404).json({
+        error: "Arquivo do atestado não encontrado.",
+      });
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${nomeSeguro}"`);
+
+    return res.sendFile(caminhoArquivo);
+  } catch (error) {
+    console.error("🔥 ERRO AO VISUALIZAR ATESTADO:", error);
+    return res.status(500).json({
+      error: "Erro ao abrir atestado.",
+    });
+  }
+}
+
 module.exports = {
   salvarAtestado,
   removerAtestado,
+  visualizarAtestado,
 };

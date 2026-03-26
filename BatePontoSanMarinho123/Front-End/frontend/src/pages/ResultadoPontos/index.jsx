@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { api } from "../../services/api";
 import "./resultadoPontos.css";
 
 export default function ResultadoPontos() {
@@ -21,14 +21,15 @@ export default function ResultadoPontos() {
           return;
         }
 
-        const res = await axios.get(
-          `http://localhost:4000/api/ponto/pontos/cpf/${state.cpf}`
-        );
+        const res = await api.get(`/ponto/pontos/cpf/${state.cpf}`);
 
         setFuncionario(res.data?.funcionario || null);
         setPontos(Array.isArray(res.data?.pontos) ? res.data.pontos : []);
       } catch (e) {
-        setErro("Nenhum dado encontrado.");
+        console.error("Erro ao buscar pontos:", e);
+        setErro(
+          e?.response?.data?.error || "Nenhum dado encontrado."
+        );
       } finally {
         setLoading(false);
       }
@@ -109,15 +110,16 @@ export default function ResultadoPontos() {
 
     const linhaPrincipal = novaLinha();
 
-    // Entrada principal
     if (entradas.length > 0) {
       linhaPrincipal.entrada = entradas.shift().hora || "--:--";
     } else if (autos.length > 0) {
       linhaPrincipal.entrada = autos.shift().hora || "--:--";
     }
 
-    // Intervalo principal = mais próximo da regra do banco
-    let principalInicio = escolherMaisProximo(intervalosInicio, regras?.intervalo_inicio);
+    let principalInicio = escolherMaisProximo(
+      intervalosInicio,
+      regras?.intervalo_inicio
+    );
     if (!principalInicio && intervalosInicio.length > 0) {
       principalInicio = intervalosInicio[0];
     }
@@ -128,8 +130,10 @@ export default function ResultadoPontos() {
       linhaPrincipal.intervalo = autos.shift().hora || "--:--";
     }
 
-    // Retorno principal = mais próximo da regra do banco
-    let principalFim = escolherMaisProximo(intervalosFim, regras?.intervalo_fim);
+    let principalFim = escolherMaisProximo(
+      intervalosFim,
+      regras?.intervalo_fim
+    );
     if (!principalFim && intervalosFim.length > 0) {
       principalFim = intervalosFim[0];
     }
@@ -140,7 +144,6 @@ export default function ResultadoPontos() {
       linhaPrincipal.retorno = autos.shift().hora || "--:--";
     }
 
-    // Saída principal
     if (saidas.length > 0) {
       linhaPrincipal.saida = saidas.shift().hora || "--:--";
     } else if (autos.length > 0) {
@@ -149,7 +152,6 @@ export default function ResultadoPontos() {
 
     const linhasExtras = [];
 
-    // Extras de intervalo
     while (intervalosInicio.length > 0 || intervalosFim.length > 0) {
       const linha = novaLinha();
 
@@ -166,7 +168,6 @@ export default function ResultadoPontos() {
       }
     }
 
-    // Extras de entrada/saída
     while (entradas.length > 0 || saidas.length > 0) {
       const linha = novaLinha();
 
@@ -183,7 +184,6 @@ export default function ResultadoPontos() {
       }
     }
 
-    // Extras auto
     while (autos.length > 0) {
       const linha = novaLinha();
 

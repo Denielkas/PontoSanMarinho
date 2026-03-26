@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import "./buscarPontos.css";
 
 export default function BuscarPontos() {
@@ -8,23 +7,20 @@ export default function BuscarPontos() {
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
 
-  // 👉 aplica máscara ###.###.###-##
   function formatarCPF(valor) {
     return valor
-      .replace(/\D/g, "")                 // só números
-      .slice(0, 11)                       // máximo 11 dígitos
+      .replace(/\D/g, "")
+      .slice(0, 11)
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   }
 
   function handleCPFChange(e) {
-    const valor = e.target.value;
-    setCpf(formatarCPF(valor));
+    setCpf(formatarCPF(e.target.value));
   }
 
-  async function buscar() {
-  try {
+  function buscar() {
     setErro("");
 
     const cpfLimpo = cpf.replace(/\D/g, "");
@@ -37,16 +33,11 @@ export default function BuscarPontos() {
     navigate("/resultado-pontos", {
       state: { cpf: cpfLimpo },
     });
-  } catch (e) {
-    setErro("CPF não encontrado.");
   }
-}
-
 
   return (
     <div className="buscarContainer">
       <div className="buscarCard">
-
         <h2>Consultar pontos</h2>
 
         <input
@@ -58,8 +49,17 @@ export default function BuscarPontos() {
 
         <button onClick={buscar}>Buscar</button>
 
-        {erro && <p className="buscarErro">{erro}</p>}
+        <button
+          style={{
+            marginTop: "10px",
+            background: "#6c757d",
+          }}
+          onClick={() => navigate("/")}
+        >
+          Voltar
+        </button>
 
+        {erro && <p className="buscarErro">{erro}</p>}
       </div>
     </div>
   );

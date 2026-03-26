@@ -191,7 +191,7 @@
   }
 
   .recCard {
-    width: min(860px, 94vw);
+    width: min(880px, 98vw);
     padding: 20px;
     border-radius: 20px;
   }
@@ -202,9 +202,9 @@
   }
 
   .videoWrap {
-    height: 54dvh;
-    min-height: 420px;
-    max-height: 640px;
+    height: 70dvh;
+    min-height: 480px;
+    max-height: 700px;
     border-radius: 18px;
   }
 

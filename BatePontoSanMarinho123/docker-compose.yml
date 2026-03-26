@@ -14,7 +14,7 @@ services:
       - postgres-san-volume:/var/lib/postgresql
     restart: always
 
-  back-san:
+  back:
     container_name: back-san
     build: ./Back-End
     restart: always

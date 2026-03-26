@@ -34,14 +34,14 @@ function nomeMes(mes) {
 async function ensureBancoHorasTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS banco_horas_ajustes (
-      id bigserial PRIMARY KEY,
-      funcionario_id bigint NOT NULL,
-      mes integer NOT NULL,
-      ano integer NOT NULL,
-      ajuste_minutos integer NOT NULL DEFAULT 0,
-      observacao text,
-      criado_em timestamp DEFAULT now(),
-      atualizado_em timestamp DEFAULT now(),
+      id BIGSERIAL PRIMARY KEY,
+      funcionario_id BIGINT NOT NULL,
+      mes INTEGER NOT NULL,
+      ano INTEGER NOT NULL,
+      ajuste_minutos INTEGER NOT NULL DEFAULT 0,
+      observacao TEXT,
+      criado_em TIMESTAMP DEFAULT NOW(),
+      atualizado_em TIMESTAMP DEFAULT NOW(),
       UNIQUE (funcionario_id, mes, ano)
     );
   `);
@@ -120,7 +120,7 @@ async function buscarBancoHorasInterno(mes, ano, funcionario_id) {
   return resultado;
 }
 
-exports.listarBancoHoras = async (req, res) => {
+async function listarBancoHoras(req, res) {
   try {
     await ensureBancoHorasTable();
 
@@ -130,25 +130,19 @@ exports.listarBancoHoras = async (req, res) => {
       return res.status(400).json({ error: "Informe mês e ano." });
     }
 
-    const resultado = await buscarBancoHorasInterno(mes, ano, funcionario_id);
-    return res.json(resultado);
+    const dados = await buscarBancoHorasInterno(mes, ano, funcionario_id);
+    return res.json(dados);
   } catch (err) {
     console.error("Erro ao listar banco de horas:", err);
     return res.status(500).json({ error: "Erro ao listar banco de horas." });
   }
-};
+}
 
-exports.salvarAjusteBancoHoras = async (req, res) => {
+async function salvarAjusteBancoHoras(req, res) {
   try {
     await ensureBancoHorasTable();
 
-    const {
-      funcionario_id,
-      mes,
-      ano,
-      ajuste_minutos,
-      observacao,
-    } = req.body;
+    const { funcionario_id, mes, ano, ajuste_minutos, observacao } = req.body;
 
     if (!funcionario_id || !mes || !ano) {
       return res.status(400).json({
@@ -166,12 +160,12 @@ exports.salvarAjusteBancoHoras = async (req, res) => {
         observacao,
         atualizado_em
       )
-      VALUES ($1, $2, $3, $4, $5, now())
+      VALUES ($1, $2, $3, $4, $5, NOW())
       ON CONFLICT (funcionario_id, mes, ano)
       DO UPDATE SET
         ajuste_minutos = EXCLUDED.ajuste_minutos,
         observacao = EXCLUDED.observacao,
-        atualizado_em = now()
+        atualizado_em = NOW()
       `,
       [
         funcionario_id,
@@ -184,15 +178,15 @@ exports.salvarAjusteBancoHoras = async (req, res) => {
 
     return res.json({
       ok: true,
-      message: "Ajuste de banco de horas salvo com sucesso.",
+      message: "Ajuste salvo com sucesso.",
     });
   } catch (err) {
-    console.error("Erro ao salvar ajuste do banco de horas:", err);
+    console.error("Erro ao salvar ajuste:", err);
     return res.status(500).json({ error: "Erro ao salvar ajuste." });
   }
-};
+}
 
-exports.gerarPdfBancoHoras = async (req, res) => {
+async function gerarPdfBancoHoras(req, res) {
   try {
     await ensureBancoHorasTable();
 
@@ -223,39 +217,38 @@ exports.gerarPdfBancoHoras = async (req, res) => {
     doc.pipe(res);
 
     doc.font("Helvetica-Bold").fontSize(20).text("Banco de Horas", 30, 25);
-    doc.moveDown(0.4);
     doc
       .font("Helvetica")
       .fontSize(11)
       .text(`Período: ${nomeMes(mes)}/${ano}`, 30, 55);
 
-    const colunas = {
-      nome: 30,
-      horas: 310,
-      ajuste: 430,
-      observacao: 540,
-      saldo: 720,
-    };
-
     let y = 95;
 
-    function desenharHeader() {
+    const colunas = {
+      nome: 30,
+      horas: 300,
+      ajuste: 420,
+      observacao: 530,
+      saldo: 710,
+    };
+
+    function desenharCabecalho() {
       doc.save();
       doc.rect(30, y - 4, 760, 24).fill("#1E293B");
       doc.restore();
 
-      doc.fillColor("#0D6EFD").font("Helvetica-Bold").fontSize(10);
+      doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(10);
       doc.text("Funcionário", colunas.nome, y);
       doc.text("Horas", colunas.horas, y);
       doc.text("Ajuste", colunas.ajuste, y);
       doc.text("Observação", colunas.observacao, y);
       doc.text("Saldo", colunas.saldo, y);
 
-      doc.fillColor("black");
+      doc.fillColor("#000000");
       y += 26;
     }
 
-    desenharHeader();
+    desenharCabecalho();
 
     dados.forEach((item, index) => {
       if (y > 520) {
@@ -265,7 +258,7 @@ exports.gerarPdfBancoHoras = async (req, res) => {
           layout: "landscape",
         });
         y = 40;
-        desenharHeader();
+        desenharCabecalho();
       }
 
       if (index % 2 === 0) {
@@ -274,11 +267,11 @@ exports.gerarPdfBancoHoras = async (req, res) => {
         doc.restore();
       }
 
-      doc.fillColor("#111827").font("Helvetica").fontSize(10);
+      doc.font("Helvetica").fontSize(10).fillColor("#111827");
       doc.text(item.nome || "-", colunas.nome, y, { width: 250 });
-      doc.text(item.saldo_sistema_formatado || "-", colunas.horas, y, { width: 100 });
+      doc.text(item.saldo_sistema_formatado || "-", colunas.horas, y, { width: 90 });
       doc.text(item.ajuste_formatado || "-", colunas.ajuste, y, { width: 90 });
-      doc.text(item.observacao || "-", colunas.observacao, y, { width: 160 });
+      doc.text(item.observacao || "-", colunas.observacao, y, { width: 150 });
       doc.text(item.saldo_final_formatado || "-", colunas.saldo, y, { width: 80 });
 
       y += 24;
@@ -287,13 +280,17 @@ exports.gerarPdfBancoHoras = async (req, res) => {
     doc.end();
   } catch (err) {
     console.error("Erro ao gerar PDF do banco de horas:", err);
+
     if (!res.headersSent) {
-      return res.status(500).json({ error: "Erro ao gerar PDF do banco de horas." });
+      return res.status(500).json({
+        error: "Erro ao gerar PDF do banco de horas.",
+        detalhe: err.message,
+      });
     }
   }
-};
+}
 
-exports.gerarExcelBancoHoras = async (req, res) => {
+async function gerarExcelBancoHoras(req, res) {
   try {
     await ensureBancoHorasTable();
 
@@ -310,12 +307,9 @@ exports.gerarExcelBancoHoras = async (req, res) => {
     }
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = "Sistema BatePonto";
-    workbook.created = new Date();
+    const sheet = workbook.addWorksheet("Banco de Horas");
 
-    const ws = workbook.addWorksheet("Banco de Horas");
-
-    ws.columns = [
+    sheet.columns = [
       { header: "Funcionário", key: "nome", width: 35 },
       { header: "Horas", key: "saldo_sistema_formatado", width: 18 },
       { header: "Ajuste", key: "ajuste_formatado", width: 18 },
@@ -323,64 +317,34 @@ exports.gerarExcelBancoHoras = async (req, res) => {
       { header: "Saldo", key: "saldo_final_formatado", width: 18 },
     ];
 
-    ws.mergeCells("A1:E1");
-    ws.getCell("A1").value = "Banco de Horas";
-    ws.getCell("A1").font = { bold: true, size: 16 };
-    ws.getCell("A1").alignment = { horizontal: "center" };
+    sheet.mergeCells("A1:E1");
+    sheet.getCell("A1").value = "Banco de Horas";
+    sheet.getCell("A1").font = { bold: true, size: 16 };
+    sheet.getCell("A1").alignment = { horizontal: "center" };
 
-    ws.mergeCells("A2:E2");
-    ws.getCell("A2").value = `Período: ${nomeMes(mes)}/${ano}`;
-    ws.getCell("A2").alignment = { horizontal: "center" };
+    sheet.mergeCells("A2:E2");
+    sheet.getCell("A2").value = `Período: ${nomeMes(mes)}/${ano}`;
+    sheet.getCell("A2").alignment = { horizontal: "center" };
 
-    const headerRow = ws.getRow(4);
+    const headerRow = sheet.getRow(4);
     headerRow.values = ["Funcionário", "Horas", "Ajuste", "Observação", "Saldo"];
+
     headerRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: "FFFFFF" } };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "1E293B" },
-      };
+      cell.font = { bold: true };
       cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = {
-        top: { style: "thin", color: { argb: "D9D9D9" } },
-        left: { style: "thin", color: { argb: "D9D9D9" } },
-        bottom: { style: "thin", color: { argb: "D9D9D9" } },
-        right: { style: "thin", color: { argb: "D9D9D9" } },
-      };
     });
 
-    let rowIndex = 5;
+    let linha = 5;
 
-    dados.forEach((item, index) => {
-      const row = ws.getRow(rowIndex);
-      row.values = [
+    dados.forEach((item) => {
+      sheet.getRow(linha).values = [
         item.nome || "-",
         item.saldo_sistema_formatado || "-",
         item.ajuste_formatado || "-",
         item.observacao || "-",
         item.saldo_final_formatado || "-",
       ];
-
-      row.eachCell((cell) => {
-        if (index % 2 === 0) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "F8FAFC" },
-          };
-        }
-
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.border = {
-          top: { style: "thin", color: { argb: "D9D9D9" } },
-          left: { style: "thin", color: { argb: "D9D9D9" } },
-          bottom: { style: "thin", color: { argb: "D9D9D9" } },
-          right: { style: "thin", color: { argb: "D9D9D9" } },
-        };
-      });
-
-      rowIndex++;
+      linha++;
     });
 
     res.setHeader(
@@ -393,11 +357,19 @@ exports.gerarExcelBancoHoras = async (req, res) => {
     );
 
     await workbook.xlsx.write(res);
-    res.end();
+    return res.end();
   } catch (err) {
     console.error("Erro ao gerar Excel do banco de horas:", err);
-    if (!res.headersSent) {
-      return res.status(500).json({ error: "Erro ao gerar Excel do banco de horas." });
-    }
+    return res.status(500).json({
+      error: "Erro ao gerar Excel do banco de horas.",
+      detalhe: err.message,
+    });
   }
+}
+
+module.exports = {
+  listarBancoHoras,
+  salvarAjusteBancoHoras,
+  gerarPdfBancoHoras,
+  gerarExcelBancoHoras,
 };

@@ -32,20 +32,24 @@ export default function BancoHoras() {
 
     setTimeout(() => {
       setModalOpen(false);
-    }, 1500);
+    }, 1800);
   };
 
   useEffect(() => {
-    api
-      .get("/funcionarios")
-      .then((r) => setFuncionarios(r.data))
-      .catch((err) => {
-        console.error("Erro ao buscar funcionários:", err);
-        abrirModal("Erro", "Erro ao buscar funcionários.", true);
-      });
+    carregarFuncionarios();
   }, []);
 
-  const buscar = async () => {
+  async function carregarFuncionarios() {
+    try {
+      const response = await api.get("/funcionarios");
+      setFuncionarios(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error("Erro ao buscar funcionários:", err);
+      abrirModal("Erro", "Erro ao carregar funcionários.", true);
+    }
+  }
+
+  async function buscar() {
     if (!mes || !ano) {
       abrirModal("Atenção", "Selecione mês e ano.", true);
       return;
@@ -62,8 +66,8 @@ export default function BancoHoras() {
       const inicial = {};
       lista.forEach((item) => {
         inicial[item.funcionario_id] = {
-          ajuste_minutos: item.ajuste_minutos || 0,
-          observacao: item.observacao || "",
+          ajuste_minutos: item.ajuste_minutos ?? 0,
+          observacao: item.observacao ?? "",
         };
       });
 
@@ -72,29 +76,33 @@ export default function BancoHoras() {
       console.error("Erro ao buscar banco de horas:", err);
       abrirModal("Erro", "Erro ao buscar banco de horas.", true);
     }
-  };
+  }
 
-  const salvar = async (funcionario_id) => {
+  async function salvar(funcionario_id) {
     try {
-      const item = editando[funcionario_id];
+      const item = editando[funcionario_id] || {};
 
       await api.post("/banco-horas/ajuste", {
         funcionario_id,
         mes,
         ano,
-        ajuste_minutos: Number(item?.ajuste_minutos) || 0,
-        observacao: item?.observacao || "",
+        ajuste_minutos: Number(item.ajuste_minutos) || 0,
+        observacao: item.observacao || "",
       });
 
       abrirModal("Registrado com sucesso!", "Ajuste salvo com sucesso.");
       buscar();
     } catch (err) {
       console.error("Erro ao salvar ajuste:", err);
-      abrirModal("Erro", "Erro ao salvar ajuste.", true);
+      abrirModal(
+        "Erro",
+        err?.response?.data?.error || "Erro ao salvar ajuste.",
+        true
+      );
     }
-  };
+  }
 
-  const gerarPdf = async () => {
+  async function gerarPdf() {
     if (!mes || !ano) {
       abrirModal("Atenção", "Selecione mês e ano.", true);
       return;
@@ -108,31 +116,51 @@ export default function BancoHoras() {
         }
       );
 
-      const file = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, "_blank");
+      if (response.data?.type && !response.data.type.includes("pdf")) {
+        const texto = await response.data.text();
+        console.error("Resposta inválida no PDF:", texto);
+        abrirModal("Erro", "A API não retornou um PDF válido.", true);
+        return;
+      }
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
     } catch (err) {
       console.error("Erro ao gerar PDF do banco de horas:", err);
       abrirModal(
         "Erro",
-        err?.response?.data?.error || "Erro ao gerar PDF.",
+        err?.response?.data?.error || "Erro ao gerar PDF do banco de horas.",
         true
       );
     }
-  };
+  }
 
-  const gerarExcel = async () => {
+  async function gerarExcel() {
     if (!mes || !ano) {
       abrirModal("Atenção", "Selecione mês e ano.", true);
       return;
     }
 
     try {
-      const rota = `/banco-horas/excel?mes=${mes}&ano=${ano}&funcionario_id=${funcionarioId}`;
+      const response = await api.get(
+        `/banco-horas/excel?mes=${mes}&ano=${ano}&funcionario_id=${funcionarioId}`,
+        {
+          responseType: "blob",
+        }
+      );
 
-      const response = await api.get(rota, {
-        responseType: "blob",
-      });
+      if (
+        response.data?.type &&
+        !response.data.type.includes(
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+      ) {
+        const texto = await response.data.text();
+        console.error("Resposta inválida no Excel:", texto);
+        abrirModal("Erro", "A API não retornou um Excel válido.", true);
+        return;
+      }
 
       const blob = new Blob([response.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -152,11 +180,15 @@ export default function BancoHoras() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Erro ao gerar Excel do banco de horas:", err);
-      abrirModal("Erro", "Erro ao gerar Excel.", true);
+      abrirModal(
+        "Erro",
+        err?.response?.data?.error || "Erro ao gerar Excel.",
+        true
+      );
     }
-  };
+  }
 
-  const alterarCampo = (funcionario_id, campo, valor) => {
+  function alterarCampo(funcionario_id, campo, valor) {
     setEditando((prev) => ({
       ...prev,
       [funcionario_id]: {
@@ -164,7 +196,7 @@ export default function BancoHoras() {
         [campo]: valor,
       },
     }));
-  };
+  }
 
   return (
     <div className="bhoras-container">
@@ -247,7 +279,6 @@ export default function BancoHoras() {
               dados.map((d) => (
                 <tr key={d.funcionario_id}>
                   <td>{d.nome}</td>
-
                   <td>{d.saldo_sistema_formatado}</td>
 
                   <td>
@@ -320,7 +351,6 @@ export default function BancoHoras() {
             ) : (
               <FaCheckCircle className="modal-icon" />
             )}
-
             <h3>{modalTitulo}</h3>
             <p>{modalTexto}</p>
           </div>

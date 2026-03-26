@@ -53,27 +53,32 @@ export default function RelatorioFuncionario() {
     }, 1800);
   };
 
-  const getArquivoAtestadoUrl = (arquivo) => {
-    if (!arquivo) return "";
-    return `${window.location.origin}/uploads/${arquivo}`;
-  };
-
-  const abrirAtestado = (arquivo) => {
-    setArquivoAtestado(getArquivoAtestadoUrl(arquivo));
-    setModalAtestado(true);
-  };
-
   useEffect(() => {
-    api
-      .get("/funcionarios")
-      .then((r) => setFuncionarios(r.data))
-      .catch((err) => {
-        console.error("Erro ao carregar funcionários:", err);
-        abrirModal("Erro", "Erro ao carregar funcionários.", true);
-      });
+    carregarFuncionarios();
   }, []);
 
-  const calcularSaldoTexto = (resultado) => {
+  async function carregarFuncionarios() {
+    try {
+      const response = await api.get("/funcionarios");
+      setFuncionarios(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error("Erro ao carregar funcionários:", err);
+      abrirModal("Erro", "Erro ao carregar funcionários.", true);
+    }
+  }
+
+  function getArquivoAtestadoUrl(arquivo) {
+    if (!arquivo) return "";
+    return `${window.location.origin}/uploads/${arquivo}`;
+  }
+
+  function abrirAtestado(arquivo) {
+    const url = getArquivoAtestadoUrl(arquivo);
+    setArquivoAtestado(url);
+    setModalAtestado(true);
+  }
+
+  function calcularSaldoTexto(resultado) {
     const totalMinutos = resultado.reduce((acc, r) => {
       if (r.folga || r.ferias) return acc;
       return acc + (Number(r.saldo_bruto) || 0);
@@ -83,9 +88,9 @@ export default function RelatorioFuncionario() {
     const absMin = Math.abs(totalMinutos);
 
     return `${sinal}${Math.floor(absMin / 60)}h ${absMin % 60}m`;
-  };
+  }
 
-  const buscar = async () => {
+  async function buscar() {
     if (!funcId || !mes || !ano) {
       abrirModal("Atenção", "Selecione funcionário, mês e ano.", true);
       return;
@@ -114,9 +119,9 @@ export default function RelatorioFuncionario() {
       console.error("Erro ao buscar relatório:", err);
       abrirModal("Erro", "Erro ao buscar relatório.", true);
     }
-  };
+  }
 
-  const gerarPdf = async () => {
+  async function gerarPdf() {
     if (!funcId || !mes || !ano) {
       abrirModal("Atenção", "Selecione funcionário, mês e ano.", true);
       return;
@@ -135,17 +140,23 @@ export default function RelatorioFuncionario() {
         responseType: "blob",
       });
 
-      const file = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(file);
+      if (response.data?.type && !response.data.type.includes("pdf")) {
+        const texto = await response.data.text();
+        console.error("Resposta inválida no PDF:", texto);
+        abrirModal("Erro", "A API não retornou um PDF válido.", true);
+        return;
+      }
 
-      window.open(fileURL, "_blank");
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
     } catch (err) {
       console.error("Erro ao gerar PDF:", err);
       abrirModal("Erro", "Erro ao gerar PDF.", true);
     }
-  };
+  }
 
-  const gerarExcel = async () => {
+  async function gerarExcel() {
     if (!funcId || !mes || !ano) {
       abrirModal("Atenção", "Selecione funcionário, mês e ano.", true);
       return;
@@ -163,6 +174,18 @@ export default function RelatorioFuncionario() {
       const response = await api.get(rota, {
         responseType: "blob",
       });
+
+      if (
+        response.data?.type &&
+        !response.data.type.includes(
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+      ) {
+        const texto = await response.data.text();
+        console.error("Resposta inválida no Excel:", texto);
+        abrirModal("Erro", "A API não retornou um Excel válido.", true);
+        return;
+      }
 
       const blob = new Blob([response.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -184,9 +207,9 @@ export default function RelatorioFuncionario() {
       console.error("Erro ao gerar Excel:", err);
       abrirModal("Erro", "Erro ao gerar Excel.", true);
     }
-  };
+  }
 
-  const lancarHorarioPadraoMes = async () => {
+  async function lancarHorarioPadraoMes() {
     if (!funcId || funcId === "todos" || !mes || !ano) {
       abrirModal(
         "Atenção",
@@ -217,7 +240,9 @@ export default function RelatorioFuncionario() {
 
       abrirModal(
         "Sucesso",
-        `Horário padrão lançado. Inseridos: ${response.data?.dias_inseridos || 0} dia(s). Ignorados: ${response.data?.dias_ignorados || 0} dia(s).`
+        `Horário padrão lançado. Inseridos: ${
+          response.data?.dias_inseridos || 0
+        } dia(s). Ignorados: ${response.data?.dias_ignorados || 0} dia(s).`
       );
 
       buscar();
@@ -229,9 +254,9 @@ export default function RelatorioFuncionario() {
         true
       );
     }
-  };
+  }
 
-  const abrirEdicao = (linha) => {
+  function abrirEdicao(linha) {
     if (funcId === "todos") {
       abrirModal("Atenção", "Para editar, selecione apenas 1 funcionário.", true);
       return;
@@ -251,9 +276,9 @@ export default function RelatorioFuncionario() {
     });
 
     setEditOpen(true);
-  };
+  }
 
-  const salvarAlteracao = async () => {
+  async function salvarAlteracao() {
     try {
       const bloqueado = editData.falta || editData.folga || editData.ferias;
 
@@ -277,9 +302,9 @@ export default function RelatorioFuncionario() {
       console.error("Erro ao salvar alteração:", err);
       abrirModal("Erro", "Erro ao salvar alteração.", true);
     }
-  };
+  }
 
-  const removerAtestado = async (linha) => {
+  async function removerAtestado(linha) {
     if (funcId === "todos") {
       abrirModal("Atenção", "Para remover, selecione apenas 1 funcionário.", true);
       return;
@@ -305,7 +330,7 @@ export default function RelatorioFuncionario() {
       console.error("Erro ao remover atestado:", err);
       abrirModal("Erro", "Erro ao remover atestado.", true);
     }
-  };
+  }
 
   return (
     <div className="relatorio-container">
@@ -440,7 +465,6 @@ export default function RelatorioFuncionario() {
                 <td>
                   <strong>{d.data}</strong>
                 </td>
-
                 <td>{d.nome}</td>
                 <td>{d.entrada}</td>
                 <td>{d.intervalo_inicio}</td>

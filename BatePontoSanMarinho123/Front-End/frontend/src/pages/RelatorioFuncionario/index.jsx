@@ -335,7 +335,12 @@ export default function RelatorioFuncionario() {
         }
       );
 
-      if (response.data?.type && !response.data.type.includes("pdf")) {
+      if (!response.data || response.data.size === 0) {
+        abrirModal("Erro", "PDF do atestado vazio ou inválido.", true);
+        return;
+      }
+
+      if (response.data.type && !response.data.type.includes("pdf")) {
         const texto = await response.data.text();
         console.error("Resposta inválida ao abrir atestado:", texto);
         abrirModal("Erro", "A API não retornou um PDF válido.", true);
@@ -346,14 +351,19 @@ export default function RelatorioFuncionario() {
         window.URL.revokeObjectURL(arquivoAtestado);
       }
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const blobUrl = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      );
 
       setArquivoAtestado(blobUrl);
       setModalAtestado(true);
     } catch (err) {
       console.error("Erro ao abrir atestado:", err);
-      abrirModal("Erro", "Erro ao abrir atestado.", true);
+      abrirModal(
+        "Erro",
+        err?.response?.data?.error || "Erro ao abrir atestado.",
+        true
+      );
     }
   }
 

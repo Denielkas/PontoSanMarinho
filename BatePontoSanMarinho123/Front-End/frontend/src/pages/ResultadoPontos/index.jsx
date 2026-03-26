@@ -21,15 +21,13 @@ export default function ResultadoPontos() {
           return;
         }
 
-        const res = await api.get(`/ponto/pontos/cpf/${state.cpf}`);
+        const res = await api.get(`/ponto/cpf/${state.cpf}`);
 
         setFuncionario(res.data?.funcionario || null);
         setPontos(Array.isArray(res.data?.pontos) ? res.data.pontos : []);
       } catch (e) {
         console.error("Erro ao buscar pontos:", e);
-        setErro(
-          e?.response?.data?.error || "Nenhum dado encontrado."
-        );
+        setErro(e?.response?.data?.error || "Nenhum dado encontrado.");
       } finally {
         setLoading(false);
       }
@@ -116,10 +114,7 @@ export default function ResultadoPontos() {
       linhaPrincipal.entrada = autos.shift().hora || "--:--";
     }
 
-    let principalInicio = escolherMaisProximo(
-      intervalosInicio,
-      regras?.intervalo_inicio
-    );
+    let principalInicio = escolherMaisProximo(intervalosInicio, regras?.intervalo_inicio);
     if (!principalInicio && intervalosInicio.length > 0) {
       principalInicio = intervalosInicio[0];
     }
@@ -130,10 +125,7 @@ export default function ResultadoPontos() {
       linhaPrincipal.intervalo = autos.shift().hora || "--:--";
     }
 
-    let principalFim = escolherMaisProximo(
-      intervalosFim,
-      regras?.intervalo_fim
-    );
+    let principalFim = escolherMaisProximo(intervalosFim, regras?.intervalo_fim);
     if (!principalFim && intervalosFim.length > 0) {
       principalFim = intervalosFim[0];
     }
@@ -243,15 +235,9 @@ export default function ResultadoPontos() {
         <h2>Resumo de Hoje</h2>
 
         <div className="resultadoInfo">
-          <span>
-            <strong>Colaborador:</strong> {funcionario.nome}
-          </span>
-          <span>
-            <strong>CPF:</strong> {funcionario.cpf}
-          </span>
-          <span>
-            <strong>Data:</strong> {dataHoje}
-          </span>
+          <span><strong>Colaborador:</strong> {funcionario.nome}</span>
+          <span><strong>CPF:</strong> {funcionario.cpf}</span>
+          <span><strong>Data:</strong> {dataHoje}</span>
         </div>
 
         <div className="tableResponsive">
@@ -266,7 +252,6 @@ export default function ResultadoPontos() {
                 <th>Saída</th>
               </tr>
             </thead>
-
             <tbody>
               {linhas.length > 0 ? (
                 linhas.map((linha, index) => (

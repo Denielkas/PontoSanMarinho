@@ -102,15 +102,15 @@ export default function BancoHoras() {
 
     try {
       const response = await api.get(
-        `/banco-horas/pdf?mes=${mes}&ano=${ano}&funcionario_id=${funcionarioId}`
+        `/banco-horas/pdf?mes=${mes}&ano=${ano}&funcionario_id=${funcionarioId}`,
+        {
+          responseType: "blob",
+        }
       );
 
-      if (!response.data?.arquivo) {
-        abrirModal("Erro", "Não foi possível gerar o PDF.", true);
-        return;
-      }
-
-      window.open(response.data.arquivo, "_blank");
+      const file = new Blob([response.data], { type: "application/pdf" });
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, "_blank");
     } catch (err) {
       console.error("Erro ao gerar PDF do banco de horas:", err);
       abrirModal(
@@ -152,11 +152,7 @@ export default function BancoHoras() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Erro ao gerar Excel do banco de horas:", err);
-      abrirModal(
-        "Erro",
-        err?.response?.data?.error || "Erro ao gerar Excel.",
-        true
-      );
+      abrirModal("Erro", "Erro ao gerar Excel.", true);
     }
   };
 

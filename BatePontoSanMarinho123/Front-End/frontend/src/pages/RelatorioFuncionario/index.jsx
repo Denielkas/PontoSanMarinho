@@ -53,8 +53,13 @@ export default function RelatorioFuncionario() {
     }, 1800);
   };
 
+  const getArquivoAtestadoUrl = (arquivo) => {
+    if (!arquivo) return "";
+    return `${window.location.origin}/uploads/${arquivo}`;
+  };
+
   const abrirAtestado = (arquivo) => {
-    setArquivoAtestado(arquivo);
+    setArquivoAtestado(getArquivoAtestadoUrl(arquivo));
     setModalAtestado(true);
   };
 
@@ -177,11 +182,7 @@ export default function RelatorioFuncionario() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Erro ao gerar Excel:", err);
-      abrirModal(
-        "Erro",
-        err?.response?.data?.error || "Erro ao gerar Excel.",
-        true
-      );
+      abrirModal("Erro", "Erro ao gerar Excel.", true);
     }
   };
 
@@ -530,7 +531,7 @@ export default function RelatorioFuncionario() {
             </button>
 
             <iframe
-              src={`/uploads/${arquivoAtestado}`}
+              src={arquivoAtestado}
               title="Atestado"
               className="pdfViewer"
             />

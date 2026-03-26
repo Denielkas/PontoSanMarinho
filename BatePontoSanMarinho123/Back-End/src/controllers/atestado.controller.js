@@ -2,7 +2,8 @@ const pool = require("../database/pool");
 const fs = require("fs");
 const path = require("path");
 
-const PASTA_UPLOADS = process.env.UPLOADS_DIR || path.join(__dirname, "../../uploads");
+const PASTA_UPLOADS =
+  process.env.UPLOADS_DIR || path.join(__dirname, "../../uploads");
 
 async function garantirTabelaAtestados() {
   await pool.query(`

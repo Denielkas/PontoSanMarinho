@@ -1,7 +1,6 @@
 const pool = require("../database/pool");
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const path = require("path");
+const ExcelJS = require("exceljs");
 const { gerarRelatorioFuncionario } = require("./relatorio.controller");
 
 function formatarSaldoMinutos(totalMinutos = 0) {
@@ -30,18 +29,6 @@ function nomeMes(mes) {
     "Dezembro",
   ];
   return meses[Number(mes)] || String(mes);
-}
-
-function garantirPastaRelatorios() {
-  const pasta = path.join(__dirname, "../relatorios");
-  if (!fs.existsSync(pasta)) {
-    fs.mkdirSync(pasta, { recursive: true });
-  }
-  return pasta;
-}
-
-function gerarNomeArquivo(prefixo, mes, ano) {
-  return `${prefixo}_${mes}_${ano}_${Date.now()}.pdf`;
 }
 
 async function ensureBancoHorasTable() {
@@ -146,6 +133,7 @@ exports.listarBancoHoras = async (req, res) => {
     const resultado = await buscarBancoHorasInterno(mes, ano, funcionario_id);
     return res.json(resultado);
   } catch (err) {
+    console.error("Erro ao listar banco de horas:", err);
     return res.status(500).json({ error: "Erro ao listar banco de horas." });
   }
 };
@@ -199,6 +187,7 @@ exports.salvarAjusteBancoHoras = async (req, res) => {
       message: "Ajuste de banco de horas salvo com sucesso.",
     });
   } catch (err) {
+    console.error("Erro ao salvar ajuste do banco de horas:", err);
     return res.status(500).json({ error: "Erro ao salvar ajuste." });
   }
 };
@@ -219,18 +208,19 @@ exports.gerarPdfBancoHoras = async (req, res) => {
       return res.status(404).json({ error: "Nenhum dado encontrado." });
     }
 
-    const pasta = garantirPastaRelatorios();
-    const nomeArquivo = gerarNomeArquivo("banco_horas", mes, ano);
-    const pdfPath = path.join(pasta, nomeArquivo);
-
     const doc = new PDFDocument({
       margin: 30,
       size: "A4",
       layout: "landscape",
     });
 
-    const writeStream = fs.createWriteStream(pdfPath);
-    doc.pipe(writeStream);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="banco_horas_${mes}_${ano}.pdf"`
+    );
+
+    doc.pipe(res);
 
     doc.font("Helvetica-Bold").fontSize(20).text("Banco de Horas", 30, 25);
     doc.moveDown(0.4);
@@ -295,18 +285,119 @@ exports.gerarPdfBancoHoras = async (req, res) => {
     });
 
     doc.end();
-
-    writeStream.on("finish", () => {
-      return res.json({
-        ok: true,
-        arquivo: `/relatorios/${nomeArquivo}`,
-      });
-    });
-
-    writeStream.on("error", (err) => {
-      return res.status(500).json({ error: "Erro ao salvar PDF." });
-    });
   } catch (err) {
-    return res.status(500).json({ error: "Erro ao gerar PDF do banco de horas." });
+    console.error("Erro ao gerar PDF do banco de horas:", err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Erro ao gerar PDF do banco de horas." });
+    }
+  }
+};
+
+exports.gerarExcelBancoHoras = async (req, res) => {
+  try {
+    await ensureBancoHorasTable();
+
+    const { mes, ano, funcionario_id } = req.query;
+
+    if (!mes || !ano) {
+      return res.status(400).json({ error: "Informe mês e ano." });
+    }
+
+    const dados = await buscarBancoHorasInterno(mes, ano, funcionario_id);
+
+    if (!dados.length) {
+      return res.status(404).json({ error: "Nenhum dado encontrado." });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Sistema BatePonto";
+    workbook.created = new Date();
+
+    const ws = workbook.addWorksheet("Banco de Horas");
+
+    ws.columns = [
+      { header: "Funcionário", key: "nome", width: 35 },
+      { header: "Horas", key: "saldo_sistema_formatado", width: 18 },
+      { header: "Ajuste", key: "ajuste_formatado", width: 18 },
+      { header: "Observação", key: "observacao", width: 25 },
+      { header: "Saldo", key: "saldo_final_formatado", width: 18 },
+    ];
+
+    ws.mergeCells("A1:E1");
+    ws.getCell("A1").value = "Banco de Horas";
+    ws.getCell("A1").font = { bold: true, size: 16 };
+    ws.getCell("A1").alignment = { horizontal: "center" };
+
+    ws.mergeCells("A2:E2");
+    ws.getCell("A2").value = `Período: ${nomeMes(mes)}/${ano}`;
+    ws.getCell("A2").alignment = { horizontal: "center" };
+
+    const headerRow = ws.getRow(4);
+    headerRow.values = ["Funcionário", "Horas", "Ajuste", "Observação", "Saldo"];
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFF" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "1E293B" },
+      };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.border = {
+        top: { style: "thin", color: { argb: "D9D9D9" } },
+        left: { style: "thin", color: { argb: "D9D9D9" } },
+        bottom: { style: "thin", color: { argb: "D9D9D9" } },
+        right: { style: "thin", color: { argb: "D9D9D9" } },
+      };
+    });
+
+    let rowIndex = 5;
+
+    dados.forEach((item, index) => {
+      const row = ws.getRow(rowIndex);
+      row.values = [
+        item.nome || "-",
+        item.saldo_sistema_formatado || "-",
+        item.ajuste_formatado || "-",
+        item.observacao || "-",
+        item.saldo_final_formatado || "-",
+      ];
+
+      row.eachCell((cell) => {
+        if (index % 2 === 0) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "F8FAFC" },
+          };
+        }
+
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = {
+          top: { style: "thin", color: { argb: "D9D9D9" } },
+          left: { style: "thin", color: { argb: "D9D9D9" } },
+          bottom: { style: "thin", color: { argb: "D9D9D9" } },
+          right: { style: "thin", color: { argb: "D9D9D9" } },
+        };
+      });
+
+      rowIndex++;
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="banco_horas_${mes}_${ano}.xlsx"`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error("Erro ao gerar Excel do banco de horas:", err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Erro ao gerar Excel do banco de horas." });
+    }
   }
 };

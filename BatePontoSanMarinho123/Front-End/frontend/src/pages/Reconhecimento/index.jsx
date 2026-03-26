@@ -11,6 +11,7 @@ export default function Reconhecimento() {
   const canvasRef = useRef(null);
   const frameLoopRef = useRef(null);
   const streamRef = useRef(null);
+
   const workingRef = useRef(false);
   const confirmOpenRef = useRef(false);
 
@@ -74,7 +75,7 @@ export default function Reconhecimento() {
         if (data?.matched && data?.funcionario_id) {
           stopRecognitionLoop();
 
-          setMsg("Rosto reconhecido. Confirmando identidade...");
+          setMsg("Rosto reconhecido...");
 
           const funcionarioId = data.funcionario_id;
           setFuncId(funcionarioId);
@@ -86,20 +87,13 @@ export default function Reconhecimento() {
 
           confirmOpenRef.current = true;
           setConfirmOpen(true);
+
           setMsg("Confirme sua identidade");
         } else {
           setMsg("Procurando rosto...");
         }
       } catch (err) {
         console.error("Erro no reconhecimento:", err);
-
-        if (err?.response?.status === 404) {
-          setMsg("Rota de reconhecimento não encontrada.");
-        } else if (err?.response?.status >= 500) {
-          setMsg("Erro no servidor de reconhecimento.");
-        } else {
-          setMsg("Procurando rosto...");
-        }
       } finally {
         workingRef.current = false;
         setWorking(false);
@@ -111,17 +105,15 @@ export default function Reconhecimento() {
     async function iniciarCamera() {
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setMsg("Câmera indisponível neste navegador ou fora de HTTPS.");
+          setMsg("Câmera indisponível.");
           return;
         }
 
-        setMsg("Iniciando câmera...");
-
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: "user" },
+            facingMode: "user",
             width: { ideal: 1280 },
-            height: { ideal: 720 },
+            height: { ideal: 1280 },
           },
           audio: false,
         });
@@ -137,15 +129,8 @@ export default function Reconhecimento() {
           startRecognitionLoop();
         }
       } catch (err) {
-        console.error("Erro ao acessar a câmera:", err);
-
-        if (err?.name === "NotAllowedError") {
-          setMsg("Permissão da câmera negada.");
-        } else if (err?.name === "NotFoundError") {
-          setMsg("Nenhuma câmera encontrada.");
-        } else {
-          setMsg("Erro ao acessar a câmera.");
-        }
+        console.error("Erro câmera:", err);
+        setMsg("Erro ao acessar câmera.");
       }
     }
 
@@ -159,11 +144,14 @@ export default function Reconhecimento() {
 
   const cancelarIdentidade = () => {
     confirmOpenRef.current = false;
+
     setConfirmOpen(false);
     setFuncId(null);
     setFuncNome("");
     setFuncCpf("");
+
     setMsg("Detectando rosto...");
+
     startRecognitionLoop();
   };
 

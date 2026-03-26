@@ -13,7 +13,6 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, pastaUploads);
   },
-
   filename: (_req, file, cb) => {
     const nomeOriginal = path.basename(
       file.originalname,

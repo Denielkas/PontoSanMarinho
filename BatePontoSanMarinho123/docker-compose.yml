@@ -14,7 +14,7 @@ services:
       - postgres-san-volume:/var/lib/postgresql
     restart: always
 
-  back:
+  back-san:
     container_name: back-san
     build: ./Back-End
     restart: always
@@ -26,6 +26,7 @@ services:
       - ./Back-End/.env
     environment:
       TZ: America/Sao_Paulo
+      UPLOADS_DIR: /app/uploads
     volumes:
       - back-uploads:/app/uploads
 

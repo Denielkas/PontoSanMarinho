@@ -14,7 +14,7 @@ const {
 
 function somarSaldo(registros = []) {
   return registros.reduce((acc, item) => {
-    if (item.folga) return acc;
+    if (item.folga || item.atestado || item.ferias) return acc;
     return acc + (Number(item.saldo_bruto) || 0);
   }, 0);
 }
@@ -62,11 +62,12 @@ function textoStatus(item) {
   if (item.falta) return "Falta";
   if (item.folga) return "Folga";
   if (item.atestado) return "Atestado";
+  if (item.ferias) return "Férias";
   return "Normal";
 }
 
 function textoSaldo(item) {
-  if (item.folga) return "+0h 0m";
+  if (item.folga || item.atestado || item.ferias) return "+0h 0m";
   return formatarSaldoMinutos(Number(item.saldo_bruto) || 0);
 }
 
@@ -74,6 +75,7 @@ function corLinhaHex(item, indice) {
   if (item.folga) return "EAF3FF";
   if (item.falta) return "FDECEC";
   if (item.atestado) return "FFF4E5";
+  if (item.ferias) return "E8FCEB";
   if (indice % 2 === 0) return "F3F3F3";
   return null;
 }
@@ -171,6 +173,9 @@ function desenharLinhaTabela(doc, item, y, indice) {
   } else if (item.atestado) {
     corFundo = "#FFF4E5";
     corTextoData = "#D97706";
+  } else if (item.ferias) {
+    corFundo = "#E8FCEB";
+    corTextoData = "#16A34A";
   } else if (indice % 2 === 0) {
     corFundo = "#F3F3F3";
   }
@@ -181,9 +186,10 @@ function desenharLinhaTabela(doc, item, y, indice) {
     doc.restore();
   }
 
-  const saldoLinha = item.folga
-    ? "+0h 0m"
-    : formatarSaldoMinutos(Number(item.saldo_bruto) || 0);
+  const saldoLinha =
+    item.folga || item.atestado || item.ferias
+      ? "+0h 0m"
+      : formatarSaldoMinutos(Number(item.saldo_bruto) || 0);
 
   let statusTexto = "Normal";
   let corStatus = "#16A34A";
@@ -197,6 +203,9 @@ function desenharLinhaTabela(doc, item, y, indice) {
   } else if (item.atestado) {
     statusTexto = "Atestado";
     corStatus = "#D97706";
+  } else if (item.ferias) {
+    statusTexto = "Férias";
+    corStatus = "#16A34A";
   }
 
   let corSaldo = "#16A34A";
@@ -204,6 +213,8 @@ function desenharLinhaTabela(doc, item, y, indice) {
     corSaldo = "#D97706";
   } else if (item.folga) {
     corSaldo = "#2563EB";
+  } else if (item.ferias) {
+    corSaldo = "#16A34A";
   } else if (Number(item.saldo_bruto) < 0) {
     corSaldo = "#DC2626";
   }
@@ -214,7 +225,9 @@ function desenharLinhaTabela(doc, item, y, indice) {
   doc.text(formatarTexto(item.data, "--"), colunas.data, y, { width: 75 });
 
   doc.fillColor("black");
-  doc.text(formatarTexto(item.entrada, "--:--"), colunas.entrada, y, { width: 60 });
+  doc.text(formatarTexto(item.entrada, "--:--"), colunas.entrada, y, {
+    width: 60,
+  });
   doc.text(formatarTexto(item.intervalo_inicio, "--:--"), colunas.intervalo, y, {
     width: 65,
   });
@@ -268,6 +281,11 @@ function desenharLegenda(doc) {
   doc.restore();
   doc.text("Atestado", 200, y - 1);
 
+  doc.save();
+  doc.rect(280, y, 14, 10).fill("#E8FCEB");
+  doc.restore();
+  doc.text("Férias", 300, y - 1);
+
   doc.y = y + 16;
 }
 
@@ -314,7 +332,7 @@ function desenharObservacoes(doc, mes, saldoTexto) {
   );
 
   doc.text(
-    "Dias com falta, folga e atestado aparecem na coluna Status do relatório.",
+    "Dias com falta, folga, atestado e férias aparecem na coluna Status do relatório.",
     x + 8,
     y + 40,
     {
@@ -503,6 +521,8 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
           cell.font = { bold: true, color: { argb: "D97706" } };
         } else if (item.folga) {
           cell.font = { bold: true, color: { argb: "2563EB" } };
+        } else if (item.ferias) {
+          cell.font = { bold: true, color: { argb: "16A34A" } };
         } else if (Number(item.saldo_bruto) < 0) {
           cell.font = { bold: true, color: { argb: "DC2626" } };
         } else {
@@ -515,6 +535,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
         if (item.falta) cor = "DC2626";
         if (item.folga) cor = "2563EB";
         if (item.atestado) cor = "D97706";
+        if (item.ferias) cor = "16A34A";
 
         cell.font = { bold: true, color: { argb: cor } };
       }
@@ -552,6 +573,13 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     fgColor: { argb: "FFF4E5" },
   };
 
+  ws.getCell(`D${rowIndex}`).value = "Férias";
+  ws.getCell(`D${rowIndex}`).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "E8FCEB" },
+  };
+
   rowIndex += 2;
   ws.mergeCells(`A${rowIndex}:H${rowIndex}`);
   ws.getCell(`A${rowIndex}`).value =
@@ -565,7 +593,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   rowIndex++;
   ws.mergeCells(`A${rowIndex}:H${rowIndex}`);
   ws.getCell(`A${rowIndex}`).value =
-    "Dias com falta, folga e atestado aparecem na coluna Status do relatório.";
+    "Dias com falta, folga, atestado e férias aparecem na coluna Status do relatório.";
 
   rowIndex += 3;
   ws.mergeCells(`C${rowIndex}:F${rowIndex}`);

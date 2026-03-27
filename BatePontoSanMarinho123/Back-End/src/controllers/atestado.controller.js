@@ -18,6 +18,16 @@ async function garantirTabelaAtestados() {
   `);
 }
 
+function converterDataBRparaISO(dataBR) {
+  if (!dataBR) return null;
+
+  const [dia, mes, ano] = String(dataBR).split("/");
+
+  if (!dia || !mes || !ano) return null;
+
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
 async function salvarAtestado(req, res) {
   try {
     await garantirTabelaAtestados();
@@ -37,6 +47,15 @@ async function salvarAtestado(req, res) {
     }
 
     const arquivo = req.file.filename;
+    const caminhoArquivo = path.join(PASTA_UPLOADS, arquivo);
+
+    if (!fs.existsSync(caminhoArquivo)) {
+      console.error("❌ Arquivo não encontrado após upload:", caminhoArquivo);
+
+      return res.status(500).json({
+        error: "Arquivo não foi salvo fisicamente.",
+      });
+    }
 
     await pool.query(
       `
@@ -51,24 +70,19 @@ async function salvarAtestado(req, res) {
       [funcionario_id, data_inicio, data_fim, arquivo]
     );
 
-    return res.json({
+    return res.status(201).json({
       ok: true,
       message: "Atestado salvo com sucesso.",
       arquivo,
+      url: `/api/atestado/arquivo/${encodeURIComponent(arquivo)}`,
     });
   } catch (error) {
     console.error("🔥 ERRO AO SALVAR ATESTADO:", error);
+
     return res.status(500).json({
       error: "Erro ao salvar atestado.",
     });
   }
-}
-
-function converterDataBRparaISO(dataBR) {
-  if (!dataBR) return null;
-  const [dia, mes, ano] = String(dataBR).split("/");
-  if (!dia || !mes || !ano) return null;
-  return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 }
 
 async function removerAtestado(req, res) {
@@ -137,6 +151,7 @@ async function removerAtestado(req, res) {
     });
   } catch (error) {
     console.error("🔥 ERRO AO REMOVER ATESTADO:", error);
+
     return res.status(500).json({
       error: "Erro ao remover atestado.",
     });
@@ -158,9 +173,14 @@ async function visualizarAtestado(req, res) {
     const nomeSeguro = path.basename(arquivo);
     const caminhoArquivo = path.join(PASTA_UPLOADS, nomeSeguro);
 
+    console.log("📎 arquivo solicitado:", nomeSeguro);
+    console.log("📂 pasta uploads:", PASTA_UPLOADS);
+    console.log("📄 caminho completo:", caminhoArquivo);
+
     if (!fs.existsSync(caminhoArquivo)) {
       return res.status(404).json({
-        error: "Arquivo do atestado não encontrado.",
+        error: "Arquivo físico não encontrado.",
+        arquivo: nomeSeguro,
       });
     }
 
@@ -170,6 +190,7 @@ async function visualizarAtestado(req, res) {
     return res.sendFile(caminhoArquivo);
   } catch (error) {
     console.error("🔥 ERRO AO VISUALIZAR ATESTADO:", error);
+
     return res.status(500).json({
       error: "Erro ao abrir atestado.",
     });

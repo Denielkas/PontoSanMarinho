@@ -186,7 +186,7 @@ export default function CadastrarRosto() {
           autoPlay
           muted
           playsInline
-          className="video"
+          className="rostocadVideo"
         />
       </div>
 

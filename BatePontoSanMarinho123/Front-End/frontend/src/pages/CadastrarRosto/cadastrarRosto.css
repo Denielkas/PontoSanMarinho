@@ -1,32 +1,43 @@
 .rostocadPage {
-  padding: 20px;
+  padding: 16px;
   display: grid;
-  gap: 20px;
+  gap: 16px;
   max-width: 600px;
   margin: 0 auto;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .rostocadPage h2 {
   font-size: 24px;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   color: #fff;
 }
 
 .videoArea {
   display: flex;
   justify-content: center;
+  align-items: center;
   border-radius: 14px;
   overflow: hidden;
   background: #0d1014;
   padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.videoArea .video {
+.videoArea .video,
+.video {
   width: 100%;
-  max-width: 500px;
-  border-radius: 10px;
+  max-width: 100%;
+  height: auto;
+  max-height: 55vh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: black;
+  display: block;
 }
 
 .rostocadBtn {
@@ -39,11 +50,18 @@
   cursor: pointer;
   font-size: 16px;
   transition: all 0.2s;
+  width: 100%;
 }
 
 .rostocadBtn:hover {
   opacity: 0.9;
   transform: translateY(-2px);
+}
+
+.rostocadBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .rostocadBack {
@@ -54,6 +72,7 @@
   border-radius: 10px;
   cursor: pointer;
   transition: 0.2s;
+  width: 100%;
 }
 
 .rostocadBack:hover {
@@ -62,6 +81,9 @@
 
 .msg {
   color: #fff;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .modal-ponto {
@@ -73,17 +95,19 @@
   justify-content: center;
   z-index: 999;
   animation: fadeIn 0.3s ease;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .modal-box {
   background: #ffffffdd;
-  padding: 30px 45px;
+  padding: 24px 20px;
   border-radius: 18px;
   text-align: center;
   color: #000;
   animation: scaleIn 0.25s ease;
-  min-width: 320px;
-  max-width: 90vw;
+  width: 100%;
+  max-width: 380px;
 }
 
 .modal-box-erro {
@@ -91,7 +115,7 @@
 }
 
 .modal-icon {
-  font-size: 60px;
+  font-size: 56px;
   color: #2ecc71;
   margin-bottom: 10px;
 }
@@ -101,13 +125,13 @@
 }
 
 .modal-box h3 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: bold;
   margin-bottom: 8px;
 }
 
 .modal-box p {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -129,11 +153,43 @@
   }
 }
 
-.video {
-  width: 100%;
-  max-width: 700px;
-  height: 400px;
-  object-fit: cover;
-  border-radius: 18px;
-  background: black;
+/* Tablet */
+@media (max-width: 1024px) {
+  .rostocadPage {
+    max-width: 95%;
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .videoArea .video,
+  .video {
+    max-height: 50vh;
+  }
+}
+
+/* Celular */
+@media (max-width: 768px) {
+  .rostocadPage h2 {
+    font-size: 22px;
+  }
+
+  .videoArea {
+    padding: 8px;
+  }
+
+  .videoArea .video,
+  .video {
+    max-height: 42vh;
+    border-radius: 10px;
+  }
+
+  .rostocadBtn,
+  .rostocadBack {
+    font-size: 15px;
+    padding: 13px 16px;
+  }
+
+  .msg {
+    font-size: 14px;
+  }
 }

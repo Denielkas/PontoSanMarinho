@@ -41,7 +41,7 @@
   display: block !important;
 }
 
-.video {
+.recVideo {
   position: absolute !important;
   inset: 0 !important;
   top: 0 !important;

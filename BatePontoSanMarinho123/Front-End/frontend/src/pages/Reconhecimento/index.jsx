@@ -177,7 +177,7 @@ export default function Reconhecimento() {
         <div className="videoWrap">
           <video
             ref={videoRef}
-            className="video"
+            className="recVideo"
             autoPlay
             muted
             playsInline

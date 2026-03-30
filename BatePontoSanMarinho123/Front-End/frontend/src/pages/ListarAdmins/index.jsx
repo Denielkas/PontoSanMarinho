@@ -95,9 +95,9 @@ export default function ListarAdmins() {
         old.map((item) =>
           item.id === editing.id
             ? {
-                ...item,
-                username: form.username,
-              }
+              ...item,
+              username: form.username,
+            }
             : item
         )
       );
@@ -221,6 +221,13 @@ export default function ListarAdmins() {
                 </button>
               </div>
             </div>
+
+            <button
+              className="btn-excluir-admin"
+              onClick={() => excluirAdmin(admin.id)}
+            >
+              Excluir ADM
+            </button>
 
             <div className="modal-actions">
               <button className="modal-btn-light" onClick={fecharModal}>

@@ -6,28 +6,151 @@ async function garantirTabelaAdmins() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admins (
       id BIGSERIAL PRIMARY KEY,
-      username VARCHAR(100) UNIQUE NOT NULL,
+      username VARCHAR(100) NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
 }
 
+async function login(req, res) {
+  try {
+    await garantirTabelaAdmins();
+
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        error: "Usuário e senha são obrigatórios.",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT id, username, password_hash
+      FROM admins
+      WHERE username = $1
+      LIMIT 1
+      `,
+      [username]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        error: "Credenciais inválidas.",
+      });
+    }
+
+    const admin = result.rows[0];
+
+    const senhaCorreta = await bcrypt.compare(password, admin.password_hash);
+
+    if (!senhaCorreta) {
+      return res.status(401).json({
+        error: "Credenciais inválidas.",
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({
+        error: "JWT_SECRET não configurado no .env.",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        sub: admin.id,
+        username: admin.username,
+        role: "admin",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "5h" }
+    );
+
+    return res.json({
+      token,
+      username: admin.username,
+    });
+  } catch (err) {
+    console.error("Erro no login:", err);
+    return res.status(500).json({
+      error: "Erro interno no login.",
+    });
+  }
+}
+
+async function register(req, res) {
+  try {
+    await garantirTabelaAdmins();
+
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        error: "Usuário e senha são obrigatórios.",
+      });
+    }
+
+    if (String(password).trim().length < 4) {
+      return res.status(400).json({
+        error: "A senha deve ter no mínimo 4 caracteres.",
+      });
+    }
+
+    const existe = await pool.query(
+      `
+      SELECT id
+      FROM admins
+      WHERE username = $1
+      LIMIT 1
+      `,
+      [username]
+    );
+
+    if (existe.rows.length > 0) {
+      return res.status(409).json({
+        error: "Este usuário já existe.",
+      });
+    }
+
+    const hash = await bcrypt.hash(String(password), 10);
+
+    const result = await pool.query(
+      `
+      INSERT INTO admins (username, password_hash)
+      VALUES ($1, $2)
+      RETURNING id, username, created_at
+      `,
+      [username, hash]
+    );
+
+    return res.status(201).json({
+      message: "Administrador cadastrado com sucesso.",
+      admin: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Erro no cadastro:", err);
+    return res.status(500).json({
+      error: "Erro interno no cadastro.",
+    });
+  }
+}
+
 async function listarAdmins(req, res) {
   try {
     await garantirTabelaAdmins();
 
-    const { rows } = await pool.query(`
+    const result = await pool.query(`
       SELECT id, username, created_at
       FROM admins
       ORDER BY id ASC
     `);
 
-    return res.json(rows);
+    return res.json(result.rows);
   } catch (err) {
-    console.error("Erro ao listar administradores:", err);
+    console.error("Erro ao listar admins:", err);
     return res.status(500).json({
-      error: "Erro ao listar administradores",
+      error: "Erro ao listar administradores.",
     });
   }
 }
@@ -41,34 +164,32 @@ async function alterarSenhaAdmin(req, res) {
 
     if (!id) {
       return res.status(400).json({
-        error: "ID do administrador é obrigatório",
+        error: "ID do administrador é obrigatório.",
       });
     }
 
-    if (!password) {
+    if (!password || String(password).trim().length < 4) {
       return res.status(400).json({
-        error: "A nova senha é obrigatória",
+        error: "A nova senha deve ter pelo menos 4 caracteres.",
       });
     }
 
-    if (String(password).length < 4) {
-      return res.status(400).json({
-        error: "A senha deve ter no mínimo 4 caracteres",
-      });
-    }
-
-    const adminExiste = await pool.query(
-      "SELECT id, username FROM admins WHERE id = $1 LIMIT 1",
+    const existe = await pool.query(
+      `
+      SELECT id, username
+      FROM admins
+      WHERE id = $1
+      `,
       [id]
     );
 
-    if (adminExiste.rows.length === 0) {
+    if (existe.rows.length === 0) {
       return res.status(404).json({
-        error: "Administrador não encontrado",
+        error: "Administrador não encontrado.",
       });
     }
 
-    const password_hash = bcrypt.hashSync(password, 10);
+    const hash = await bcrypt.hash(String(password), 10);
 
     await pool.query(
       `
@@ -76,127 +197,62 @@ async function alterarSenhaAdmin(req, res) {
       SET password_hash = $1
       WHERE id = $2
       `,
-      [password_hash, id]
+      [hash, id]
     );
 
     return res.json({
-      message: "Senha alterada com sucesso",
+      message: "Senha alterada com sucesso.",
     });
   } catch (err) {
     console.error("Erro ao alterar senha do admin:", err);
     return res.status(500).json({
-      error: "Erro ao alterar senha do administrador",
+      error: "Erro ao alterar senha.",
     });
   }
 }
 
-async function login(req, res) {
+async function excluirAdmin(req, res) {
   try {
     await garantirTabelaAdmins();
 
-    const { username, password } = req.body;
+    const { id } = req.params;
 
-    if (!username || !password) {
+    if (!id) {
       return res.status(400).json({
-        error: "Usuário e senha são obrigatórios",
+        error: "ID do administrador é obrigatório.",
       });
     }
 
-    const { rows } = await pool.query(
-      "SELECT * FROM admins WHERE username = $1 LIMIT 1",
-      [username]
+    const existe = await pool.query(
+      `
+      SELECT id
+      FROM admins
+      WHERE id = $1
+      `,
+      [id]
     );
 
-    const admin = rows[0];
-
-    if (!admin) {
-      return res.status(401).json({ error: "Credenciais inválidas" });
-    }
-
-    const ok = bcrypt.compareSync(password, admin.password_hash);
-
-    if (!ok) {
-      return res.status(401).json({ error: "Credenciais inválidas" });
-    }
-
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({
-        error: "JWT_SECRET não configurado no .env",
+    if (existe.rows.length === 0) {
+      return res.status(404).json({
+        error: "Administrador não encontrado.",
       });
     }
 
-    const token = jwt.sign(
-      {
-        sub: admin.id,
-        username: admin.username,
-        role: "admin",
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "5h",
-      }
+    await pool.query(
+      `
+      DELETE FROM admins
+      WHERE id = $1
+      `,
+      [id]
     );
 
     return res.json({
-      token,
-      username: admin.username,
+      message: "Administrador excluído com sucesso.",
     });
   } catch (err) {
-    console.error("Erro no login:", err);
+    console.error("Erro ao excluir administrador:", err);
     return res.status(500).json({
-      error: "Erro interno no login",
-    });
-  }
-}
-
-async function register(req, res) {
-  try {
-    await garantirTabelaAdmins();
-
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({
-        error: "Usuário e senha são obrigatórios",
-      });
-    }
-
-    if (password.length < 4) {
-      return res.status(400).json({
-        error: "A senha deve ter no mínimo 4 caracteres",
-      });
-    }
-
-    const userExists = await pool.query(
-      "SELECT id FROM admins WHERE username = $1 LIMIT 1",
-      [username]
-    );
-
-    if (userExists.rows.length > 0) {
-      return res.status(409).json({
-        error: "Este usuário já existe",
-      });
-    }
-
-    const password_hash = bcrypt.hashSync(password, 10);
-
-    const { rows } = await pool.query(
-      `
-      INSERT INTO admins (username, password_hash)
-      VALUES ($1, $2)
-      RETURNING id, username, created_at
-      `,
-      [username, password_hash]
-    );
-
-    return res.status(201).json({
-      message: "Administrador cadastrado com sucesso",
-      admin: rows[0],
-    });
-  } catch (err) {
-    console.error("Erro no cadastro:", err);
-    return res.status(500).json({
-      error: "Erro interno no cadastro",
+      error: "Erro ao excluir administrador.",
     });
   }
 }
@@ -206,4 +262,5 @@ module.exports = {
   register,
   listarAdmins,
   alterarSenhaAdmin,
+  excluirAdmin,
 };

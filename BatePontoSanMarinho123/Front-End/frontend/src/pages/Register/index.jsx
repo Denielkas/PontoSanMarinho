@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { api } from "../../services/api";
 import "./register.css";
 
@@ -11,6 +12,9 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +36,7 @@ export default function Register() {
       setMsg(data.message || "Cadastro realizado com sucesso");
 
       setTimeout(() => {
-        navigate("/");
+        navigate("/login");
       }, 1200);
     } catch (err) {
       const error =
@@ -62,24 +66,42 @@ export default function Register() {
             <label className={username ? "filled" : ""}>Usuário</label>
           </div>
 
-          <div className="floatLabel">
+          <div className="floatLabel passwordWrapper">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
             <label className={password ? "filled" : ""}>Senha</label>
+
+            <button
+              type="button"
+              className="eyeButton"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
 
-          <div className="floatLabel">
+          <div className="floatLabel passwordWrapper">
             <input
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
-            <label className={confirmPassword ? "filled" : ""}>Confirmar senha</label>
+            <label className={confirmPassword ? "filled" : ""}>
+              Confirmar senha
+            </label>
+
+            <button
+              type="button"
+              className="eyeButton"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
 
           <button className="loginButton" type="submit" disabled={loading}>
@@ -89,7 +111,7 @@ export default function Register() {
           <button
             className="registerButton"
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/login")}
           >
             Voltar para login
           </button>

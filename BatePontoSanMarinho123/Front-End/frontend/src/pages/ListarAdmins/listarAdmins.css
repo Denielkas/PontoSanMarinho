@@ -213,3 +213,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+.btn-excluir-admin {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-excluir-admin:hover {
+  background: #b91c1c;
+}

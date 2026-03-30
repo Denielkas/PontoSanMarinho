@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { api } from "../../services/api";
 import "./login.css";
 
@@ -10,6 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +25,6 @@ export default function Login() {
       });
 
       localStorage.setItem("token", data.token);
-
       navigate("/app/registrar-funcionario", { replace: true });
     } catch (err) {
       const error =
@@ -53,14 +54,22 @@ export default function Login() {
             <label className={username ? "filled" : ""}>Usuário</label>
           </div>
 
-          <div className="floatLabel">
+          <div className="floatLabel passwordWrapper">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
             <label className={password ? "filled" : ""}>Senha</label>
+
+            <button
+              type="button"
+              className="eyeButton"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
 
           <button className="loginButton" type="submit" disabled={loading}>

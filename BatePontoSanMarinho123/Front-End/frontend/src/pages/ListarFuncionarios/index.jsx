@@ -9,9 +9,8 @@ const formatCPF = (v = "") => {
   const s = onlyDigits(v);
   if (s.length <= 3) return s;
   if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3, 6)}`;
-  if (s.length <= 9) {
+  if (s.length <= 9)
     return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}`;
-  }
   return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9, 11)}`;
 };
 
@@ -121,8 +120,8 @@ export default function ListarFuncionarios() {
 
       await api.put(`/funcionarios/${editing.id}`, payload);
 
-      await carregar();
       await carregarFuncoes();
+      await carregar();
       fecharModal();
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao atualizar funcionário");
@@ -143,6 +142,22 @@ export default function ListarFuncionarios() {
       window.open(data.imagem_url, "_blank");
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao abrir imagem.");
+    }
+  };
+
+  const excluirImagem = async (funcionarioId, nome) => {
+    const confirmou = window.confirm(
+      `Deseja realmente excluir a imagem do rosto de ${nome}?`
+    );
+
+    if (!confirmou) return;
+
+    try {
+      await api.delete(`/funcionarios/${funcionarioId}/imagem`);
+      alert("Imagem excluída com sucesso.");
+      await carregar();
+    } catch (err) {
+      alert(err.response?.data?.error || "Erro ao excluir imagem.");
     }
   };
 
@@ -216,23 +231,43 @@ export default function ListarFuncionarios() {
                     </button>
 
                     {f.rosto_cadastrado && (
-                      <button
-                        onClick={() => verImagem(f.id)}
-                        style={{
-                          marginTop: "6px",
-                          background: "#f59e0b",
-                          color: "#fff",
-                          border: "none",
-                          padding: "8px 12px",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          display: "block",
-                          width: "100%",
-                          fontWeight: "600",
-                        }}
-                      >
-                        Ver Imagem
-                      </button>
+                      <>
+                        <button
+                          onClick={() => verImagem(f.id)}
+                          style={{
+                            marginTop: "6px",
+                            background: "#f59e0b",
+                            color: "#fff",
+                            border: "none",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            display: "block",
+                            width: "100%",
+                            fontWeight: "600",
+                          }}
+                        >
+                          Ver Imagem
+                        </button>
+
+                        <button
+                          onClick={() => excluirImagem(f.id, f.nome)}
+                          style={{
+                            marginTop: "6px",
+                            background: "#dc2626",
+                            color: "#fff",
+                            border: "none",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            display: "block",
+                            width: "100%",
+                            fontWeight: "600",
+                          }}
+                        >
+                          Excluir Imagem
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

@@ -140,7 +140,8 @@ exports.listar = async (_req, res) => {
         f.*,
         fc.nome AS funcao_nome,
         CASE
-          WHEN fe.funcionario_id IS NOT NULL THEN true
+          WHEN fe.funcionario_id IS NOT NULL AND fe.foto_path IS NOT NULL AND fe.foto_path <> ''
+          THEN true
           ELSE false
         END AS rosto_cadastrado,
         fe.foto_path
@@ -179,7 +180,8 @@ exports.buscarPorId = async (req, res) => {
         f.funcao_id,
         fc.nome AS funcao_nome,
         CASE
-          WHEN fe.funcionario_id IS NOT NULL THEN true
+          WHEN fe.funcionario_id IS NOT NULL AND fe.foto_path IS NOT NULL AND fe.foto_path <> ''
+          THEN true
           ELSE false
         END AS rosto_cadastrado,
         fe.foto_path
@@ -227,7 +229,7 @@ exports.verImagemRosto = async (req, res) => {
       return res.status(404).json({ error: "Imagem do rosto não encontrada." });
     }
 
-    if (!rows[0].foto_path) {
+    if (!rows[0].foto_path || String(rows[0].foto_path).trim() === "") {
       return res.status(404).json({ error: "Este funcionário não possui imagem salva." });
     }
 
@@ -239,6 +241,59 @@ exports.verImagemRosto = async (req, res) => {
   } catch (err) {
     console.error("Erro ao buscar imagem do rosto:", err);
     return res.status(500).json({ error: "Erro ao buscar imagem do rosto." });
+  }
+};
+
+/* =========================================
+   EXCLUIR IMAGEM DO ROSTO
+========================================= */
+exports.excluirImagemRosto = async (req, res) => {
+  try {
+    await garantirTabelas();
+
+    const id = Number(req.params.id);
+
+    const existeFuncionario = await pool.query(
+      "SELECT id FROM funcionarios WHERE id = $1 LIMIT 1",
+      [id]
+    );
+
+    if (existeFuncionario.rows.length === 0) {
+      return res.status(404).json({ error: "Funcionário não encontrado." });
+    }
+
+    const existeFace = await pool.query(
+      `
+      SELECT funcionario_id, foto_path
+      FROM face_embeddings
+      WHERE funcionario_id = $1
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (existeFace.rows.length === 0) {
+      return res.status(404).json({ error: "Nenhuma imagem encontrada para este funcionário." });
+    }
+
+    await pool.query(
+      `
+      UPDATE face_embeddings
+      SET foto_path = NULL,
+          embedding = NULL,
+          updated_at = NOW()
+      WHERE funcionario_id = $1
+      `,
+      [id]
+    );
+
+    return res.json({
+      ok: true,
+      message: "Imagem do rosto excluída com sucesso.",
+    });
+  } catch (err) {
+    console.error("Erro ao excluir imagem do rosto:", err);
+    return res.status(500).json({ error: "Erro ao excluir imagem do rosto." });
   }
 };
 
@@ -392,7 +447,8 @@ exports.atualizar = async (req, res) => {
         f.*,
         fc.nome AS funcao_nome,
         CASE
-          WHEN fe.funcionario_id IS NOT NULL THEN true
+          WHEN fe.funcionario_id IS NOT NULL AND fe.foto_path IS NOT NULL AND fe.foto_path <> ''
+          THEN true
           ELSE false
         END AS rosto_cadastrado,
         fe.foto_path

@@ -10,8 +10,11 @@ router.get("/public/:id", (req, res) => {
 
 router.get("/", auth, ctrl.listar);
 router.get("/:id/imagem", auth, ctrl.verImagemRosto);
-router.get("/:id", auth, ctrl.buscarPorId);
+
 router.post("/", auth, ctrl.criar);
 router.put("/:id", auth, ctrl.atualizar);
+router.delete("/:id/imagem", auth, ctrl.excluirImagemRosto);
+
+router.get("/:id", auth, ctrl.buscarPorId);
 
 module.exports = router;

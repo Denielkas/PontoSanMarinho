@@ -97,7 +97,6 @@ export default function ListarFuncionarios() {
     }));
   };
 
-  /* 🔥 FUNÇÃO CORRIGIDA */
   const salvarAlteracoes = async () => {
     if (!editing) return;
 
@@ -121,7 +120,6 @@ export default function ListarFuncionarios() {
 
       await api.put(`/funcionarios/${editing.id}`, payload);
 
-      /* 🔥 ATUALIZA A TABELA IMEDIATAMENTE */
       setLista((old) =>
         old.map((item) =>
           item.id === editing.id
@@ -137,9 +135,8 @@ export default function ListarFuncionarios() {
                 funcao_nome:
                   form.funcao_id === "outro"
                     ? form.funcao_nome
-                    : funcoes.find(
-                        (f) => f.id === Number(form.funcao_id)
-                      )?.nome || item.funcao_nome,
+                    : funcoes.find((f) => f.id === Number(form.funcao_id))?.nome ||
+                      item.funcao_nome,
               }
             : item
         )
@@ -151,6 +148,21 @@ export default function ListarFuncionarios() {
       alert(err.response?.data?.error || "Erro ao atualizar funcionário");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const verImagem = async (funcionarioId) => {
+    try {
+      const { data } = await api.get(`/funcionarios/${funcionarioId}/imagem`);
+
+      if (!data?.imagem_url) {
+        alert("Imagem não encontrada.");
+        return;
+      }
+
+      window.open(data.imagem_url, "_blank");
+    } catch (err) {
+      alert(err.response?.data?.error || "Erro ao abrir imagem.");
     }
   };
 
@@ -206,14 +218,42 @@ export default function ListarFuncionarios() {
                     </button>
 
                     <button
-                      className="btnPrimary"
-                      onClick={() =>
-                        navigate(`/app/cadastrar-rosto/${f.id}`)
-                      }
-                      style={{ marginTop: "6px" }}
+                      onClick={() => navigate(`/app/cadastrar-rosto/${f.id}`)}
+                      style={{
+                        marginTop: "6px",
+                        background: f.rosto_cadastrado ? "#16a34a" : "#2563eb",
+                        color: "#fff",
+                        border: "none",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        display: "block",
+                        width: "100%",
+                        fontWeight: "600",
+                      }}
                     >
-                      Cadastrar Rosto
+                      {f.rosto_cadastrado ? "Rosto Cadastrado" : "Cadastrar Rosto"}
                     </button>
+
+                    {f.rosto_cadastrado && (
+                      <button
+                        onClick={() => verImagem(f.id)}
+                        style={{
+                          marginTop: "6px",
+                          background: "#f59e0b",
+                          color: "#fff",
+                          border: "none",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          display: "block",
+                          width: "100%",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Ver Imagem
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

@@ -145,11 +145,6 @@ export default function CadastrarRosto() {
         image_base64: img,
       };
 
-      console.log("Enviando payload facial:", {
-        funcionario_id: payload.funcionario_id,
-        image_base64_inicio: payload.image_base64.slice(0, 40),
-      });
-
       const { data } = await apiFace.post("/enroll", payload);
 
       if (!data?.ok) {

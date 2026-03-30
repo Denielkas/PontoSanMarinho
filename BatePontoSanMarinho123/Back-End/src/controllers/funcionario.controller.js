@@ -54,11 +54,46 @@ async function garantirTabelaFuncionarios() {
 }
 
 /* =========================================
+   GARANTE TABELA FACE_EMBEDDINGS
+========================================= */
+async function garantirTabelaFaceEmbeddings() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS face_embeddings (
+      funcionario_id BIGINT PRIMARY KEY REFERENCES funcionarios(id) ON DELETE CASCADE,
+      embedding FLOAT8[],
+      foto_path TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  try {
+    await pool.query(`
+      ALTER TABLE face_embeddings
+      ADD COLUMN IF NOT EXISTS foto_path TEXT
+    `);
+
+    await pool.query(`
+      ALTER TABLE face_embeddings
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+    `);
+
+    await pool.query(`
+      ALTER TABLE face_embeddings
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+    `);
+  } catch (err) {
+    console.log("Colunas da tabela face_embeddings já existem ou não foi necessário alterar.");
+  }
+}
+
+/* =========================================
    GARANTE TUDO NECESSÁRIO
 ========================================= */
 async function garantirTabelas() {
   await garantirTabelaFuncoes();
   await garantirTabelaFuncionarios();
+  await garantirTabelaFaceEmbeddings();
 }
 
 /* =========================================
@@ -98,9 +133,15 @@ exports.listar = async (_req, res) => {
     const { rows } = await pool.query(`
       SELECT 
         f.*,
-        fc.nome AS funcao_nome
+        fc.nome AS funcao_nome,
+        CASE
+          WHEN fe.funcionario_id IS NOT NULL THEN true
+          ELSE false
+        END AS rosto_cadastrado,
+        fe.foto_path
       FROM funcionarios f
       LEFT JOIN funcoes fc ON fc.id = f.funcao_id
+      LEFT JOIN face_embeddings fe ON fe.funcionario_id = f.id
       ORDER BY f.id DESC
     `);
 
@@ -131,9 +172,15 @@ exports.buscarPorId = async (req, res) => {
         f.intervalo_fim,
         f.saida,
         f.funcao_id,
-        fc.nome AS funcao_nome
+        fc.nome AS funcao_nome,
+        CASE
+          WHEN fe.funcionario_id IS NOT NULL THEN true
+          ELSE false
+        END AS rosto_cadastrado,
+        fe.foto_path
       FROM funcionarios f
       LEFT JOIN funcoes fc ON fc.id = f.funcao_id
+      LEFT JOIN face_embeddings fe ON fe.funcionario_id = f.id
       WHERE f.id = $1
       LIMIT 1
       `,
@@ -148,6 +195,45 @@ exports.buscarPorId = async (req, res) => {
   } catch (err) {
     console.error("Erro ao buscar funcionário:", err);
     return res.status(500).json({ error: "Erro interno ao buscar funcionário" });
+  }
+};
+
+/* =========================================
+   VER IMAGEM DO ROSTO
+========================================= */
+exports.verImagemRosto = async (req, res) => {
+  try {
+    await garantirTabelas();
+
+    const id = Number(req.params.id);
+
+    const { rows } = await pool.query(
+      `
+      SELECT fe.foto_path, f.nome
+      FROM face_embeddings fe
+      INNER JOIN funcionarios f ON f.id = fe.funcionario_id
+      WHERE fe.funcionario_id = $1
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (!rows[0]) {
+      return res.status(404).json({ error: "Imagem do rosto não encontrada." });
+    }
+
+    if (!rows[0].foto_path) {
+      return res.status(404).json({ error: "Este funcionário não possui imagem salva." });
+    }
+
+    return res.json({
+      ok: true,
+      nome: rows[0].nome,
+      imagem_url: rows[0].foto_path,
+    });
+  } catch (err) {
+    console.error("Erro ao buscar imagem do rosto:", err);
+    return res.status(500).json({ error: "Erro ao buscar imagem do rosto." });
   }
 };
 
@@ -208,7 +294,9 @@ exports.criar = async (req, res) => {
       `
       SELECT 
         f.*,
-        fc.nome AS funcao_nome
+        fc.nome AS funcao_nome,
+        false AS rosto_cadastrado,
+        NULL::TEXT AS foto_path
       FROM funcionarios f
       LEFT JOIN funcoes fc ON fc.id = f.funcao_id
       WHERE f.id = $1
@@ -297,9 +385,15 @@ exports.atualizar = async (req, res) => {
       `
       SELECT 
         f.*,
-        fc.nome AS funcao_nome
+        fc.nome AS funcao_nome,
+        CASE
+          WHEN fe.funcionario_id IS NOT NULL THEN true
+          ELSE false
+        END AS rosto_cadastrado,
+        fe.foto_path
       FROM funcionarios f
       LEFT JOIN funcoes fc ON fc.id = f.funcao_id
+      LEFT JOIN face_embeddings fe ON fe.funcionario_id = f.id
       WHERE f.id = $1
       `,
       [id]

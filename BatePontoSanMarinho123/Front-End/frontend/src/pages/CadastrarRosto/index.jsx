@@ -54,14 +54,27 @@ export default function CadastrarRosto() {
           return;
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-          },
-          audio: false,
-        });
+        let stream = null;
+
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { exact: "user" },
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            },
+            audio: false,
+          });
+        } catch {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "user",
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            },
+            audio: false,
+          });
+        }
 
         streamRef.current = stream;
 
@@ -80,7 +93,7 @@ export default function CadastrarRosto() {
           });
         }
 
-        setMsg("Câmera pronta. Clique para capturar o rosto.");
+        setMsg("Câmera frontal pronta. Clique para capturar o rosto.");
       } catch (err) {
         console.error("Erro câmera:", err);
         setMsg("Erro ao acessar câmera");
@@ -95,7 +108,7 @@ export default function CadastrarRosto() {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
-  }, [id]);
+  }, [id, navigate]);
 
   const captureFrame = () => {
     const video = videoRef.current;
@@ -135,7 +148,7 @@ export default function CadastrarRosto() {
     if (!img) {
       abrirModal("Erro ao cadastrar", "Não foi possível capturar a imagem.", true);
       setSaving(false);
-      setMsg("Câmera pronta. Clique para capturar o rosto.");
+      setMsg("Câmera frontal pronta. Clique para capturar o rosto.");
       return;
     }
 
@@ -167,7 +180,7 @@ export default function CadastrarRosto() {
       );
     } finally {
       setSaving(false);
-      setMsg("Câmera pronta. Clique para capturar o rosto.");
+      setMsg("Câmera frontal pronta. Clique para capturar o rosto.");
     }
   };
 
@@ -192,11 +205,7 @@ export default function CadastrarRosto() {
         {msg}
       </p>
 
-      <button
-        onClick={salvar}
-        className="rostocadBtn"
-        disabled={saving}
-      >
+      <button onClick={salvar} className="rostocadBtn" disabled={saving}>
         {saving ? "Salvando..." : "Capturar e Salvar"}
       </button>
 
@@ -215,7 +224,6 @@ export default function CadastrarRosto() {
             ) : (
               <FaCheckCircle className="modal-icon" />
             )}
-
             <h3>{modalTitulo}</h3>
             <p>{modalTexto}</p>
           </div>

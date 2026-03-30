@@ -11,7 +11,6 @@ router.get("/public/:id", (req, res) => {
 router.get("/", auth, ctrl.listar);
 router.get("/:id/imagem", auth, ctrl.verImagemRosto);
 router.get("/:id", auth, ctrl.buscarPorId);
-
 router.post("/", auth, ctrl.criar);
 router.put("/:id", auth, ctrl.atualizar);
 

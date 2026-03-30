@@ -70,6 +70,11 @@ async function garantirTabelaFaceEmbeddings() {
   try {
     await pool.query(`
       ALTER TABLE face_embeddings
+      ADD COLUMN IF NOT EXISTS embedding FLOAT8[]
+    `);
+
+    await pool.query(`
+      ALTER TABLE face_embeddings
       ADD COLUMN IF NOT EXISTS foto_path TEXT
     `);
 

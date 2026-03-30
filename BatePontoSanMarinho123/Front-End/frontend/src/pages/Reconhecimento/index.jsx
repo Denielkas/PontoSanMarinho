@@ -14,6 +14,7 @@ export default function Reconhecimento() {
 
   const workingRef = useRef(false);
   const confirmOpenRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const [msg, setMsg] = useState("Detectando rosto...");
   const [working, setWorking] = useState(false);
@@ -52,13 +53,14 @@ export default function Reconhecimento() {
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    return canvas.toDataURL("image/jpeg", 0.75);
+    return canvas.toDataURL("image/jpeg", 0.8);
   }, []);
 
   const startRecognitionLoop = useCallback(() => {
     stopRecognitionLoop();
 
     frameLoopRef.current = setInterval(async () => {
+      if (!mountedRef.current) return;
       if (workingRef.current || confirmOpenRef.current) return;
 
       const frame = captureFrame();
@@ -94,64 +96,116 @@ export default function Reconhecimento() {
         }
       } catch (err) {
         console.error("Erro no reconhecimento:", err);
+        setMsg("Erro ao reconhecer rosto.");
       } finally {
         workingRef.current = false;
-        setWorking(false);
+        if (mountedRef.current) {
+          setWorking(false);
+        }
       }
-    }, 1200);
+    }, 1500);
   }, [captureFrame, stopRecognitionLoop]);
 
-  useEffect(() => {
-    async function iniciarCamera() {
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setMsg("Câmera indisponível.");
-          return;
-        }
+  const obterCameraFrontal = useCallback(async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Câmera indisponível neste navegador.");
+    }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { exact: "user" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+    } catch (err) {
+      console.log("Falhou exact:user, tentando user simples...", err);
+
+      try {
+        return await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
             width: { ideal: 1280 },
-            height: { ideal: 1280 },
+            height: { ideal: 720 },
           },
           audio: false,
         });
+      } catch (err2) {
+        console.log("Falhou facingMode user, tentando enumerar câmeras...", err2);
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter((d) => d.kind === "videoinput");
+
+        const frontal =
+          videoInputs.find((d) =>
+            /front|frontal|user|face/i.test(d.label || "")
+          ) || videoInputs[0];
+
+        if (!frontal?.deviceId) {
+          throw new Error("Nenhuma câmera encontrada.");
+        }
+
+        return await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: frontal.deviceId },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    async function iniciarCamera() {
+      try {
+        setMsg("Abrindo câmera frontal...");
+
+        stopRecognitionLoop();
+        stopCamera();
+
+        const stream = await obterCameraFrontal();
 
         streamRef.current = stream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute("autoplay", "");
+          videoRef.current.setAttribute("muted", "");
+          videoRef.current.setAttribute("playsinline", "");
 
           await videoRef.current.play();
-
-          setMsg("Detectando rosto...");
-          startRecognitionLoop();
         }
+
+        setMsg("Detectando rosto...");
+        startRecognitionLoop();
       } catch (err) {
         console.error("Erro câmera:", err);
-        setMsg("Erro ao acessar câmera.");
+        setMsg("Erro ao acessar câmera frontal.");
       }
     }
 
     iniciarCamera();
 
     return () => {
+      mountedRef.current = false;
       stopRecognitionLoop();
       stopCamera();
     };
-  }, [startRecognitionLoop, stopRecognitionLoop, stopCamera]);
+  }, [obterCameraFrontal, startRecognitionLoop, stopRecognitionLoop, stopCamera]);
 
   const cancelarIdentidade = () => {
     confirmOpenRef.current = false;
-
     setConfirmOpen(false);
     setFuncId(null);
     setFuncNome("");
     setFuncCpf("");
-
     setMsg("Detectando rosto...");
-
     startRecognitionLoop();
   };
 

@@ -9,8 +9,9 @@ const formatCPF = (v = "") => {
   const s = onlyDigits(v);
   if (s.length <= 3) return s;
   if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3, 6)}`;
-  if (s.length <= 9)
+  if (s.length <= 9) {
     return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}`;
+  }
   return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9, 11)}`;
 };
 
@@ -120,28 +121,7 @@ export default function ListarFuncionarios() {
 
       await api.put(`/funcionarios/${editing.id}`, payload);
 
-      setLista((old) =>
-        old.map((item) =>
-          item.id === editing.id
-            ? {
-                ...item,
-                nome: form.nome,
-                cpf: onlyDigits(form.cpf),
-                chegada: form.chegada,
-                intervalo_inicio: form.intervalo_inicio,
-                intervalo_fim: form.intervalo_fim,
-                saida: form.saida,
-                funcao_id: payload.funcao_id ?? item.funcao_id,
-                funcao_nome:
-                  form.funcao_id === "outro"
-                    ? form.funcao_nome
-                    : funcoes.find((f) => f.id === Number(form.funcao_id))?.nome ||
-                      item.funcao_nome,
-              }
-            : item
-        )
-      );
-
+      await carregar();
       await carregarFuncoes();
       fecharModal();
     } catch (err) {

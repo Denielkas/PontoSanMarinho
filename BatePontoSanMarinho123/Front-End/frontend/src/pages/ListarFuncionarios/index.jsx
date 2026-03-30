@@ -9,19 +9,35 @@ const formatCPF = (v = "") => {
   const s = onlyDigits(v);
   if (s.length <= 3) return s;
   if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3, 6)}`;
-  if (s.length <= 9)
+  if (s.length <= 9) {
     return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}`;
+  }
   return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9, 11)}`;
 };
 
+function montarUrlAbsoluta(url = "") {
+  if (!url) return "";
+
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+
+  if (url.startsWith("/")) {
+    return `${window.location.origin}${url}`;
+  }
+
+  return `${window.location.origin}/${url}`;
+}
+
 export default function ListarFuncionarios() {
   const navigate = useNavigate();
+
   const [lista, setLista] = useState([]);
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-
   const [funcoes, setFuncoes] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     nome: "",
@@ -34,7 +50,7 @@ export default function ListarFuncionarios() {
     funcao_nome: "",
   });
 
-  const [saving, setSaving] = useState(false);
+  const total = useMemo(() => lista.length, [lista]);
 
   const carregar = async () => {
     setMsg("Carregando...");
@@ -43,7 +59,7 @@ export default function ListarFuncionarios() {
       setLista([...data].sort((a, b) => a.id - b.id));
       setMsg("");
     } catch (err) {
-      setMsg(err.response?.data?.error || "Erro ao carregar");
+      setMsg(err.response?.data?.error || "Erro ao carregar funcionários.");
     }
   };
 
@@ -52,7 +68,7 @@ export default function ListarFuncionarios() {
       const { data } = await api.get("/funcoes");
       setFuncoes(data);
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao carregar funções:", err);
     }
   };
 
@@ -61,14 +77,12 @@ export default function ListarFuncionarios() {
     carregarFuncoes();
   }, []);
 
-  const total = useMemo(() => lista.length, [lista]);
-
   const abrirModal = (f) => {
     setEditing(f);
 
     setForm({
-      nome: f.nome,
-      cpf: formatCPF(f.cpf),
+      nome: f.nome || "",
+      cpf: formatCPF(f.cpf || ""),
       chegada: (f.chegada || "").slice(0, 5),
       intervalo_inicio: (f.intervalo_inicio || "").slice(0, 5),
       intervalo_fim: (f.intervalo_fim || "").slice(0, 5),
@@ -91,9 +105,7 @@ export default function ListarFuncionarios() {
     setForm((old) => ({
       ...old,
       [name]: name === "cpf" ? formatCPF(value) : value,
-      ...(name === "funcao_id" && value !== "outro"
-        ? { funcao_nome: "" }
-        : {}),
+      ...(name === "funcao_id" && value !== "outro" ? { funcao_nome: "" } : {}),
     }));
   };
 
@@ -114,8 +126,7 @@ export default function ListarFuncionarios() {
           form.funcao_id === "outro" || !form.funcao_id
             ? null
             : Number(form.funcao_id),
-        funcao_nome:
-          form.funcao_id === "outro" ? form.funcao_nome : null,
+        funcao_nome: form.funcao_id === "outro" ? form.funcao_nome : null,
       };
 
       await api.put(`/funcionarios/${editing.id}`, payload);
@@ -124,7 +135,7 @@ export default function ListarFuncionarios() {
       await carregar();
       fecharModal();
     } catch (err) {
-      alert(err.response?.data?.error || "Erro ao atualizar funcionário");
+      alert(err.response?.data?.error || "Erro ao atualizar funcionário.");
     } finally {
       setSaving(false);
     }
@@ -135,11 +146,12 @@ export default function ListarFuncionarios() {
       const { data } = await api.get(`/funcionarios/${funcionarioId}/imagem`);
 
       if (!data?.imagem_url) {
-        alert("Imagem não encontrada.");
+        alert("Este funcionário não possui imagem salva.");
         return;
       }
 
-      window.open(data.imagem_url, "_blank");
+      const urlFinal = montarUrlAbsoluta(data.imagem_url);
+      window.open(urlFinal, "_blank", "noopener,noreferrer");
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao abrir imagem.");
     }
@@ -230,7 +242,7 @@ export default function ListarFuncionarios() {
                       {f.rosto_cadastrado ? "Rosto Cadastrado" : "Cadastrar Rosto"}
                     </button>
 
-                    {f.rosto_cadastrado && (
+                    {f.possui_imagem_rosto && (
                       <>
                         <button
                           onClick={() => verImagem(f.id)}
@@ -334,22 +346,42 @@ export default function ListarFuncionarios() {
 
               <div>
                 <label>Chegada</label>
-                <input type="time" name="chegada" value={form.chegada} onChange={onChange} />
+                <input
+                  type="time"
+                  name="chegada"
+                  value={form.chegada}
+                  onChange={onChange}
+                />
               </div>
 
               <div>
                 <label>Início intervalo</label>
-                <input type="time" name="intervalo_inicio" value={form.intervalo_inicio} onChange={onChange} />
+                <input
+                  type="time"
+                  name="intervalo_inicio"
+                  value={form.intervalo_inicio}
+                  onChange={onChange}
+                />
               </div>
 
               <div>
                 <label>Fim intervalo</label>
-                <input type="time" name="intervalo_fim" value={form.intervalo_fim} onChange={onChange} />
+                <input
+                  type="time"
+                  name="intervalo_fim"
+                  value={form.intervalo_fim}
+                  onChange={onChange}
+                />
               </div>
 
               <div>
                 <label>Saída</label>
-                <input type="time" name="saida" value={form.saida} onChange={onChange} />
+                <input
+                  type="time"
+                  name="saida"
+                  value={form.saida}
+                  onChange={onChange}
+                />
               </div>
             </div>
 

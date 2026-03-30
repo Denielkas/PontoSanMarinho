@@ -2,7 +2,7 @@ const pool = require("../database/pool");
 const { onlyDigits } = require("../utils/cpf");
 
 /* =========================================
-   GARANTIR TABELAS
+   GARANTIR TABELA FUNÇÕES
 ========================================= */
 async function garantirTabelaFuncoes() {
   await pool.query(`
@@ -14,6 +14,9 @@ async function garantirTabelaFuncoes() {
   `);
 }
 
+/* =========================================
+   GARANTIR TABELA FUNCIONÁRIOS
+========================================= */
 async function garantirTabelaFuncionarios() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS funcionarios (
@@ -31,6 +34,9 @@ async function garantirTabelaFuncionarios() {
   `);
 }
 
+/* =========================================
+   GARANTIR FACE EMBEDDINGS
+========================================= */
 async function garantirTabelaFaceEmbeddings() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS face_embeddings (
@@ -43,6 +49,9 @@ async function garantirTabelaFaceEmbeddings() {
   `);
 }
 
+/* =========================================
+   GARANTIR TUDO
+========================================= */
 async function garantirTabelas() {
   await garantirTabelaFuncoes();
   await garantirTabelaFuncionarios();
@@ -50,7 +59,7 @@ async function garantirTabelas() {
 }
 
 /* =========================================
-   FUNÇÃO AUTOMÁTICA
+   BUSCAR OU CRIAR FUNÇÃO
 ========================================= */
 async function findOrCreateFuncao(nomeFuncao) {
   if (!nomeFuncao) return null;
@@ -73,7 +82,7 @@ async function findOrCreateFuncao(nomeFuncao) {
 }
 
 /* =========================================
-   LISTAR
+   LISTAR FUNCIONÁRIOS
 ========================================= */
 exports.listar = async (_req, res) => {
   try {
@@ -101,13 +110,13 @@ exports.listar = async (_req, res) => {
 
     return res.json(rows);
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao listar funcionários:", err);
     return res.status(500).json({ error: "Erro ao listar funcionários" });
   }
 };
 
 /* =========================================
-   BUSCAR POR ID
+   BUSCAR FUNCIONÁRIO POR ID
 ========================================= */
 exports.buscarPorId = async (req, res) => {
   try {
@@ -145,13 +154,13 @@ exports.buscarPorId = async (req, res) => {
 
     return res.json(rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao buscar funcionário:", err);
     return res.status(500).json({ error: "Erro interno" });
   }
 };
 
 /* =========================================
-   VER IMAGEM
+   VER IMAGEM ROSTO
 ========================================= */
 exports.verImagemRosto = async (req, res) => {
   try {
@@ -175,11 +184,21 @@ exports.verImagemRosto = async (req, res) => {
       return res.status(404).json({ error: "Sem imagem salva." });
     }
 
+    let imagemUrl = rows[0].foto_path;
+
+    if (
+      !imagemUrl.startsWith("http://") &&
+      !imagemUrl.startsWith("https://") &&
+      !imagemUrl.startsWith("/")
+    ) {
+      imagemUrl = `/${imagemUrl}`;
+    }
+
     return res.json({
-      imagem_url: rows[0].foto_path,
+      imagem_url: imagemUrl,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao buscar imagem:", err);
     return res.status(500).json({ error: "Erro ao buscar imagem." });
   }
 };
@@ -206,13 +225,13 @@ exports.excluirImagemRosto = async (req, res) => {
       message: "Imagem excluída com sucesso.",
     });
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao excluir imagem:", err);
     return res.status(500).json({ error: "Erro ao excluir imagem." });
   }
 };
 
 /* =========================================
-   CRIAR
+   CRIAR FUNCIONÁRIO
 ========================================= */
 exports.criar = async (req, res) => {
   try {
@@ -247,13 +266,13 @@ exports.criar = async (req, res) => {
 
     return res.status(201).json(insert.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao criar funcionário:", err);
     return res.status(500).json({ error: "Erro ao criar funcionário" });
   }
 };
 
 /* =========================================
-   ATUALIZAR
+   ATUALIZAR FUNCIONÁRIO
 ========================================= */
 exports.atualizar = async (req, res) => {
   try {
@@ -294,7 +313,7 @@ exports.atualizar = async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao atualizar:", err);
     return res.status(500).json({ error: "Erro ao atualizar" });
   }
 };

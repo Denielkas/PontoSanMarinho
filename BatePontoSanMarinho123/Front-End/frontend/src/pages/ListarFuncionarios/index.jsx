@@ -157,19 +157,19 @@ export default function ListarFuncionarios() {
     }
   };
 
-  const excluirImagem = async (funcionarioId, nome) => {
+  const excluirRosto = async (funcionarioId, nome) => {
     const confirmou = window.confirm(
-      `Deseja realmente excluir a imagem do rosto de ${nome}?`
+      `Deseja realmente excluir o cadastro facial de ${nome}?`
     );
 
     if (!confirmou) return;
 
     try {
       await api.delete(`/funcionarios/${funcionarioId}/imagem`);
-      alert("Imagem excluída com sucesso.");
+      alert("Cadastro facial excluído com sucesso.");
       await carregar();
     } catch (err) {
-      alert(err.response?.data?.error || "Erro ao excluir imagem.");
+      alert(err.response?.data?.error || "Erro ao excluir cadastro facial.");
     }
   };
 
@@ -243,43 +243,43 @@ export default function ListarFuncionarios() {
                     </button>
 
                     {f.possui_imagem_rosto && (
-                      <>
-                        <button
-                          onClick={() => verImagem(f.id)}
-                          style={{
-                            marginTop: "6px",
-                            background: "#f59e0b",
-                            color: "#fff",
-                            border: "none",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            display: "block",
-                            width: "100%",
-                            fontWeight: "600",
-                          }}
-                        >
-                          Ver Imagem
-                        </button>
+                      <button
+                        onClick={() => verImagem(f.id)}
+                        style={{
+                          marginTop: "6px",
+                          background: "#f59e0b",
+                          color: "#fff",
+                          border: "none",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          display: "block",
+                          width: "100%",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Ver Imagem
+                      </button>
+                    )}
 
-                        <button
-                          onClick={() => excluirImagem(f.id, f.nome)}
-                          style={{
-                            marginTop: "6px",
-                            background: "#dc2626",
-                            color: "#fff",
-                            border: "none",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            display: "block",
-                            width: "100%",
-                            fontWeight: "600",
-                          }}
-                        >
-                          Excluir Imagem
-                        </button>
-                      </>
+                    {f.rosto_cadastrado && (
+                      <button
+                        onClick={() => excluirRosto(f.id, f.nome)}
+                        style={{
+                          marginTop: "6px",
+                          background: "#dc2626",
+                          color: "#fff",
+                          border: "none",
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          display: "block",
+                          width: "100%",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Excluir Rosto
+                      </button>
                     )}
                   </td>
                 </tr>

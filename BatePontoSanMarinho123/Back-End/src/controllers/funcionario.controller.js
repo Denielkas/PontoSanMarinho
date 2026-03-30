@@ -204,7 +204,7 @@ exports.verImagemRosto = async (req, res) => {
 };
 
 /* =========================================
-   EXCLUIR IMAGEM
+   EXCLUIR ROSTO
 ========================================= */
 exports.excluirImagemRosto = async (req, res) => {
   try {
@@ -214,6 +214,7 @@ exports.excluirImagemRosto = async (req, res) => {
       `
       UPDATE face_embeddings
       SET foto_path = NULL,
+          embedding = NULL,
           updated_at = NOW()
       WHERE funcionario_id = $1
       `,
@@ -222,11 +223,11 @@ exports.excluirImagemRosto = async (req, res) => {
 
     return res.json({
       ok: true,
-      message: "Imagem excluída com sucesso.",
+      message: "Cadastro facial excluído com sucesso.",
     });
   } catch (err) {
-    console.error("Erro ao excluir imagem:", err);
-    return res.status(500).json({ error: "Erro ao excluir imagem." });
+    console.error("Erro ao excluir cadastro facial:", err);
+    return res.status(500).json({ error: "Erro ao excluir cadastro facial." });
   }
 };
 

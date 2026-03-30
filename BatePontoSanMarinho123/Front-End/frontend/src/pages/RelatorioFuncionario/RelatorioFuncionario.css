@@ -629,3 +629,19 @@
 .btn-excel:hover {
   background: #165c36;
 }
+
+.btn-limpar {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-limpar:hover {
+  background: #b91c1c;
+}

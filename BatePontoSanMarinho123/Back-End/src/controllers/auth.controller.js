@@ -13,7 +13,84 @@ async function garantirTabelaAdmins() {
   `);
 }
 
-exports.login = async (req, res) => {
+async function listarAdmins(req, res) {
+  try {
+    await garantirTabelaAdmins();
+
+    const { rows } = await pool.query(`
+      SELECT id, username, created_at
+      FROM admins
+      ORDER BY id ASC
+    `);
+
+    return res.json(rows);
+  } catch (err) {
+    console.error("Erro ao listar administradores:", err);
+    return res.status(500).json({
+      error: "Erro ao listar administradores",
+    });
+  }
+}
+
+async function alterarSenhaAdmin(req, res) {
+  try {
+    await garantirTabelaAdmins();
+
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        error: "ID do administrador é obrigatório",
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        error: "A nova senha é obrigatória",
+      });
+    }
+
+    if (String(password).length < 4) {
+      return res.status(400).json({
+        error: "A senha deve ter no mínimo 4 caracteres",
+      });
+    }
+
+    const adminExiste = await pool.query(
+      "SELECT id, username FROM admins WHERE id = $1 LIMIT 1",
+      [id]
+    );
+
+    if (adminExiste.rows.length === 0) {
+      return res.status(404).json({
+        error: "Administrador não encontrado",
+      });
+    }
+
+    const password_hash = bcrypt.hashSync(password, 10);
+
+    await pool.query(
+      `
+      UPDATE admins
+      SET password_hash = $1
+      WHERE id = $2
+      `,
+      [password_hash, id]
+    );
+
+    return res.json({
+      message: "Senha alterada com sucesso",
+    });
+  } catch (err) {
+    console.error("Erro ao alterar senha do admin:", err);
+    return res.status(500).json({
+      error: "Erro ao alterar senha do administrador",
+    });
+  }
+}
+
+async function login(req, res) {
   try {
     await garantirTabelaAdmins();
 
@@ -70,9 +147,9 @@ exports.login = async (req, res) => {
       error: "Erro interno no login",
     });
   }
-};
+}
 
-exports.register = async (req, res) => {
+async function register(req, res) {
   try {
     await garantirTabelaAdmins();
 
@@ -107,7 +184,7 @@ exports.register = async (req, res) => {
       `
       INSERT INTO admins (username, password_hash)
       VALUES ($1, $2)
-      RETURNING id, username
+      RETURNING id, username, created_at
       `,
       [username, password_hash]
     );
@@ -122,4 +199,11 @@ exports.register = async (req, res) => {
       error: "Erro interno no cadastro",
     });
   }
+}
+
+module.exports = {
+  login,
+  register,
+  listarAdmins,
+  alterarSenhaAdmin,
 };

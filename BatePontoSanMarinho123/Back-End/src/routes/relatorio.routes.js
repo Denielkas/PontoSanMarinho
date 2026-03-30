@@ -15,7 +15,14 @@ const {
 function somarSaldo(registros = []) {
   return registros.reduce((acc, item) => {
     if (item.folga || item.atestado || item.ferias) return acc;
-    return acc + (Number(item.saldo_bruto) || 0);
+
+    const saldo = Number(item.saldo_bruto) || 0;
+
+    // positivos de até 15 minutos aparecem na linha,
+    // mas NÃO entram no saldo acumulado
+    if (saldo > 0 && saldo <= 15) return acc;
+
+    return acc + saldo;
   }, 0);
 }
 
@@ -78,6 +85,20 @@ function corLinhaHex(item, indice) {
   if (item.ferias) return "E8FCEB";
   if (indice % 2 === 0) return "F3F3F3";
   return null;
+}
+
+// REMOVE ":" DAS HORAS SOMENTE NO EXCEL
+function formatarHoraExcel(valor, fallback = "--") {
+  if (valor === null || valor === undefined || valor === "") {
+    return fallback;
+  }
+
+  const texto = String(valor).trim();
+
+  if (texto === "--:--") return "--";
+  if (texto === "--") return "--";
+
+  return texto.replace(/:/g, "");
 }
 
 /* =========================================================
@@ -494,11 +515,11 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     const row = ws.getRow(rowIndex);
     row.values = [
       formatarTexto(item.data, "--"),
-      formatarTexto(item.entrada, "--:--"),
-      formatarTexto(item.intervalo_inicio, "--:--"),
-      formatarTexto(item.intervalo_fim, "--:--"),
-      formatarTexto(item.saida, "--:--"),
-      formatarTexto(item.total_horas, "--"),
+      formatarHoraExcel(item.entrada, "--"),
+      formatarHoraExcel(item.intervalo_inicio, "--"),
+      formatarHoraExcel(item.intervalo_fim, "--"),
+      formatarHoraExcel(item.saida, "--"),
+      formatarHoraExcel(item.total_horas, "--"),
       saldo,
       status,
     ];

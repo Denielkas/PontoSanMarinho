@@ -6,6 +6,7 @@ import Reconhecimento from "./pages/Reconhecimento";
 import CadastrarRosto from "./pages/CadastrarRosto";
 import RegistrarFuncionario from "./pages/RegistrarFuncionario";
 import ListarFuncionarios from "./pages/ListarFuncionarios";
+import ListarAdmins from "./pages/ListarAdmins";
 import RelatorioFuncionario from "./pages/RelatorioFuncionario";
 import InserirPontoManual from "./pages/InserirPontoManual";
 import CadastrarAtestado from "./pages/CadastrarAtestado";
@@ -24,7 +25,6 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* PÚBLICAS */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -45,10 +45,17 @@ export default function AppRouter() {
             </PrivateRoute>
           }
         >
-          <Route index element={<Navigate to="registrar-funcionario" replace />} />
+          <Route
+            index
+            element={<Navigate to="registrar-funcionario" replace />}
+          />
 
-          <Route path="registrar-funcionario" element={<RegistrarFuncionario />} />
+          <Route
+            path="registrar-funcionario"
+            element={<RegistrarFuncionario />}
+          />
           <Route path="funcionarios" element={<ListarFuncionarios />} />
+          <Route path="admins" element={<ListarAdmins />} />
           <Route path="cadastrar-rosto/:id" element={<CadastrarRosto />} />
           <Route path="relatorio" element={<RelatorioFuncionario />} />
           <Route path="manual" element={<InserirPontoManual />} />

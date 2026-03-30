@@ -561,6 +561,48 @@ exports.ajustar = async (req, res) => {
   }
 };
 
+exports.limparBatidasDoDia = async (req, res) => {
+  try {
+    await garantirTabelas();
+
+    const { funcionario_id, data } = req.body;
+
+    if (!funcionario_id || !data) {
+      return res.status(400).json({
+        error: "Funcionário e data são obrigatórios.",
+      });
+    }
+
+    const dataISO = dataBRparaISO(data);
+
+    if (!dataISO) {
+      return res.status(400).json({
+        error: "Data inválida.",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      DELETE FROM pontos
+      WHERE funcionario_id = $1
+        AND marcado_em::date = $2::date
+      `,
+      [funcionario_id, dataISO]
+    );
+
+    return res.json({
+      ok: true,
+      removidas: result.rowCount || 0,
+      message: "Batidas do dia removidas com sucesso.",
+    });
+  } catch (err) {
+    console.error("Erro ao limpar batidas do dia:", err);
+    return res.status(500).json({
+      error: "Erro ao limpar batidas do dia.",
+    });
+  }
+};
+
 exports.lancarHorarioPadraoMes = async (req, res) => {
   const client = await pool.connect();
 

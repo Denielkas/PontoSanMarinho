@@ -26,6 +26,7 @@ export default function RelatorioFuncionario() {
   const [arquivoAtestado, setArquivoAtestado] = useState("");
 
   const [editData, setEditData] = useState({
+    funcionario_id: "",
     ids_originais: {},
     data: "",
     entrada: "",
@@ -41,6 +42,9 @@ export default function RelatorioFuncionario() {
   const [modalTitulo, setModalTitulo] = useState("");
   const [modalTexto, setModalTexto] = useState("");
   const [modalErro, setModalErro] = useState(false);
+
+  const [salvando, setSalvando] = useState(false);
+  const [limpandoBatidas, setLimpandoBatidas] = useState(false);
 
   const abrirModal = (titulo, texto, erro = false) => {
     setModalTitulo(titulo);
@@ -69,8 +73,13 @@ export default function RelatorioFuncionario() {
 
   function calcularSaldoTexto(resultado) {
     const totalMinutos = resultado.reduce((acc, r) => {
-      if (r.folga || r.ferias) return acc;
-      return acc + (Number(r.saldo_bruto) || 0);
+      if (r.folga || r.ferias || r.atestado) return acc;
+
+      const saldo = Number(r.saldo_bruto) || 0;
+
+      if (saldo > 0 && saldo <= 15) return acc;
+
+      return acc + saldo;
     }, 0);
 
     const sinal = totalMinutos < 0 ? "-" : "+";
@@ -252,6 +261,7 @@ export default function RelatorioFuncionario() {
     }
 
     setEditData({
+      funcionario_id: linha.funcionario_id,
       ids_originais: linha.ids_originais || {},
       data: linha.data,
       entrada: linha.entrada !== "--:--" ? linha.entrada : "",
@@ -269,6 +279,8 @@ export default function RelatorioFuncionario() {
 
   async function salvarAlteracao() {
     try {
+      setSalvando(true);
+
       const bloqueado = editData.falta || editData.folga || editData.ferias;
 
       await api.put("/ponto/ajustar", {
@@ -290,6 +302,45 @@ export default function RelatorioFuncionario() {
     } catch (err) {
       console.error("Erro ao salvar alteração:", err);
       abrirModal("Erro", "Erro ao salvar alteração.", true);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function limparBatidasDoDia() {
+    if (!editData.funcionario_id || !editData.data) {
+      abrirModal("Erro", "Funcionário ou data inválidos.", true);
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `Deseja realmente apagar TODAS as batidas do dia ${editData.data}?\n\nEssa ação não pode ser desfeita.`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setLimpandoBatidas(true);
+
+      await api.delete("/ponto/limpar-dia", {
+        data: {
+          funcionario_id: editData.funcionario_id,
+          data: editData.data,
+        },
+      });
+
+      setEditOpen(false);
+      abrirModal("Sucesso", "Batidas do dia removidas com sucesso!");
+      buscar();
+    } catch (err) {
+      console.error("Erro ao limpar batidas do dia:", err);
+      abrirModal(
+        "Erro",
+        err?.response?.data?.error || "Erro ao limpar batidas do dia.",
+        true
+      );
+    } finally {
+      setLimpandoBatidas(false);
     }
   }
 
@@ -530,7 +581,7 @@ export default function RelatorioFuncionario() {
                       : "#27ae60",
                   }}
                 >
-                  {d.folga || d.ferias
+                  {d.folga || d.ferias || d.atestado
                     ? "+0h 0m"
                     : `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
                         Math.abs(d.saldo_bruto) / 60
@@ -776,12 +827,24 @@ export default function RelatorioFuncionario() {
             </div>
 
             <div className="modalActions">
+              <button
+                className="btn-limpar-batidas"
+                onClick={limparBatidasDoDia}
+                disabled={limpandoBatidas || salvando}
+              >
+                {limpandoBatidas ? "Limpando..." : "Limpar Batidas do Dia"}
+              </button>
+
               <button className="btn-cancel" onClick={() => setEditOpen(false)}>
                 Cancelar
               </button>
 
-              <button className="btn-save" onClick={salvarAlteracao}>
-                Salvar Alterações
+              <button
+                className="btn-save"
+                onClick={salvarAlteracao}
+                disabled={salvando || limpandoBatidas}
+              >
+                {salvando ? "Salvando..." : "Salvar Alterações"}
               </button>
             </div>
           </div>

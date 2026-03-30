@@ -17,27 +17,26 @@ export default function DashboardLayout() {
 
   return (
     <div className={`dashContainer ${open ? "menu-open" : ""}`}>
-      
-      {/* BOTÃO DE MENU */}
       <button className="menuToggle" onClick={toggleMenu}>
         {open ? "←" : "☰"}
       </button>
 
-      {/* SIDEBAR */}
       <aside className={`dashSidebar ${open ? "show" : ""}`}>
-        
         <div className="sidebarHeader">
           <img src={logo} className="sidebarLogo" alt="San Marinho" />
         </div>
 
         <nav className="dashMenu">
-
           <NavLink to="registrar-funcionario" className="dashLink" onClick={closeOnClick}>
             Cadastrar Funcionário
           </NavLink>
 
           <NavLink to="funcionarios" className="dashLink" onClick={closeOnClick}>
             Ver Funcionários
+          </NavLink>
+
+          <NavLink to="admins" className="dashLink" onClick={closeOnClick}>
+            Administradores
           </NavLink>
 
           <NavLink to="relatorio" className="dashLink" onClick={closeOnClick}>
@@ -51,11 +50,10 @@ export default function DashboardLayout() {
           <NavLink to="atestado" className="dashLink" onClick={closeOnClick}>
             Anexar Atestado
           </NavLink>
-          
+
           <NavLink to="bancoHoras" className="dashLink" onClick={closeOnClick}>
             Banco de Horas
           </NavLink>
-
         </nav>
 
         <button className="dashLogout" onClick={logout}>
@@ -63,11 +61,9 @@ export default function DashboardLayout() {
         </button>
       </aside>
 
-      {/* CONTEÚDO */}
       <main className="dashContent">
         <Outlet />
       </main>
-
     </div>
   );
 }

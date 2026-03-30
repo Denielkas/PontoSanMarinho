@@ -1,0 +1,215 @@
+.adminPage {
+  padding: 20px;
+  font-family: system-ui, Arial;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 14px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+
+.adminActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.total {
+  opacity: 0.8;
+  font-size: 16px;
+  color: #dfe3ea;
+}
+
+.adminMsg {
+  color: #ff4d4d;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: #fff;
+}
+
+.adminTable th {
+  background: rgba(255, 255, 255, 0.18);
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+  white-space: nowrap;
+  font-size: 15px;
+}
+
+.adminTable td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.emptyRow {
+  text-align: center;
+  padding: 20px;
+  color: #ccc;
+}
+
+.btnPrimary {
+  padding: 8px 14px;
+  background: #0d6efd;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btnPrimary:hover {
+  background: #0759d3;
+}
+
+.btnSecondary {
+  padding: 7px 12px;
+  background: #6c757d;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: #565e64;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.modal-card {
+  width: min(650px, 95vw);
+  background: #1a1a1a;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: #fff;
+}
+
+.modal-card h3 {
+  text-align: center;
+  margin: 0;
+  font-size: 22px;
+  color: #0d6efd;
+  font-weight: 700;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.modal-card label {
+  display: block;
+  margin-bottom: 6px;
+  color: #d1d5db;
+  font-weight: 600;
+}
+
+.modal-card input {
+  width: 100%;
+  padding: 12px 42px 12px 14px;
+  border-radius: 10px;
+  background: #262626;
+  border: 2px solid #3a3a3a;
+  font-size: 15px;
+  color: #fff;
+  transition: 0.2s;
+  box-sizing: border-box;
+}
+
+.modal-card input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 6px rgba(13,110,253,0.4);
+  outline: none;
+}
+
+.modal-card input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.passwordField {
+  position: relative;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 12px;
+  top: 39px;
+  border: none;
+  background: transparent;
+  color: #0d6efd;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.modal-btn-primary {
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: #0d6efd;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.modal-btn-primary:hover {
+  background: #0b57d1;
+}
+
+.modal-btn-light {
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: #f1f1f1;
+  color: #111;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.modal-btn-light:hover {
+  background: #e2e2e2;
+}
+
+@media (max-width: 700px) {
+  .modal-grid {
+    grid-template-columns: 1fr;
+  }
+}

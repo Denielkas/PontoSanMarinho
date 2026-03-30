@@ -1,9 +1,19 @@
-const { Router } = require("express");
-const authCtrl = require("../controllers/auth.controller");
+const express = require("express");
+const router = express.Router();
 
-const router = Router();
+const {
+  login,
+  register,
+  listarAdmins,
+  alterarSenhaAdmin,
+} = require("../controllers/auth.controller");
 
-router.post("/login", authCtrl.login);
-router.post("/register", authCtrl.register);
+// login e cadastro
+router.post("/login", login);
+router.post("/register", register);
+
+// admins
+router.get("/admins", listarAdmins);
+router.put("/admins/:id/password", alterarSenhaAdmin);
 
 module.exports = router;

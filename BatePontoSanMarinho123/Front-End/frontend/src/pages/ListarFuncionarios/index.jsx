@@ -39,6 +39,11 @@ export default function ListarFuncionarios() {
   const [funcoes, setFuncoes] = useState([]);
   const [saving, setSaving] = useState(false);
 
+  const [imagemModalOpen, setImagemModalOpen] = useState(false);
+  const [imagemModalUrl, setImagemModalUrl] = useState("");
+  const [imagemModalNome, setImagemModalNome] = useState("");
+  const [imagemCarregando, setImagemCarregando] = useState(false);
+
   const [form, setForm] = useState({
     nome: "",
     cpf: "",
@@ -99,6 +104,13 @@ export default function ListarFuncionarios() {
     setEditing(null);
   };
 
+  const fecharModalImagem = () => {
+    setImagemModalOpen(false);
+    setImagemModalUrl("");
+    setImagemModalNome("");
+    setImagemCarregando(false);
+  };
+
   const onChange = (e) => {
     const { name, value } = e.target;
 
@@ -141,19 +153,27 @@ export default function ListarFuncionarios() {
     }
   };
 
-  const verImagem = async (funcionarioId) => {
+  const verImagem = async (funcionarioId, nome) => {
     try {
+      setImagemCarregando(true);
+
       const { data } = await api.get(`/funcionarios/${funcionarioId}/imagem`);
 
       if (!data?.imagem_url) {
+        setImagemCarregando(false);
         alert("Este funcionário não possui imagem salva.");
         return;
       }
 
       const urlFinal = montarUrlAbsoluta(data.imagem_url);
-      window.open(urlFinal, "_blank", "noopener,noreferrer");
+
+      setImagemModalUrl(urlFinal);
+      setImagemModalNome(nome || "Imagem do rosto");
+      setImagemModalOpen(true);
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao abrir imagem.");
+    } finally {
+      setImagemCarregando(false);
     }
   };
 
@@ -179,6 +199,10 @@ export default function ListarFuncionarios() {
             : f
         )
       );
+
+      if (imagemModalOpen) {
+        fecharModalImagem();
+      }
 
       alert("Cadastro facial excluído com sucesso.");
     } catch (err) {
@@ -250,10 +274,11 @@ export default function ListarFuncionarios() {
 
                       {f.possui_imagem_rosto && (
                         <button
-                          onClick={() => verImagem(f.id)}
+                          onClick={() => verImagem(f.id, f.nome)}
                           className="acaoBtn acaoBtn-ver"
+                          disabled={imagemCarregando}
                         >
-                          Ver Imagem
+                          {imagemCarregando ? "Abrindo..." : "Ver Imagem"}
                         </button>
                       )}
 
@@ -381,6 +406,38 @@ export default function ListarFuncionarios() {
                 disabled={saving}
               >
                 {saving ? "Salvando..." : "Salvar alterações"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {imagemModalOpen && (
+        <div className="modal-overlay" onClick={fecharModalImagem}>
+          <div
+            className="modal-card modal-imagem-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-imagem-topo">
+              <h3>Imagem salva do reconhecimento</h3>
+              <button className="modal-fechar-x" onClick={fecharModalImagem}>
+                ×
+              </button>
+            </div>
+
+            <p className="modal-imagem-nome">{imagemModalNome}</p>
+
+            <div className="modal-imagem-wrap">
+              <img
+                src={imagemModalUrl}
+                alt={`Rosto de ${imagemModalNome}`}
+                className="modal-imagem-preview"
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button className="modal-btn-primary" onClick={fecharModalImagem}>
+                Fechar
               </button>
             </div>
           </div>

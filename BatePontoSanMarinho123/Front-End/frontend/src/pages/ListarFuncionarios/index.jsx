@@ -56,7 +56,7 @@ export default function ListarFuncionarios() {
     setMsg("Carregando...");
     try {
       const { data } = await api.get("/funcionarios");
-      setLista([...data].sort((a, b) => a.id - b.id));
+      setLista([...data].sort((a, b) => Number(a.id) - Number(b.id)));
       setMsg("");
     } catch (err) {
       setMsg(err.response?.data?.error || "Erro ao carregar funcionários.");
@@ -166,8 +166,21 @@ export default function ListarFuncionarios() {
 
     try {
       await api.delete(`/funcionarios/${funcionarioId}/imagem`);
+
+      setLista((old) =>
+        old.map((f) =>
+          Number(f.id) === Number(funcionarioId)
+            ? {
+                ...f,
+                rosto_cadastrado: false,
+                possui_imagem_rosto: false,
+                foto_path: null,
+              }
+            : f
+        )
+      );
+
       alert("Cadastro facial excluído com sucesso.");
-      await carregar();
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao excluir cadastro facial.");
     }

@@ -34,6 +34,7 @@ export default function ListarFuncionarios() {
 
   const [lista, setLista] = useState([]);
   const [msg, setMsg] = useState("");
+  const [busca, setBusca] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [funcoes, setFuncoes] = useState([]);
@@ -56,7 +57,18 @@ export default function ListarFuncionarios() {
     funcao_nome: "",
   });
 
-  const total = useMemo(() => lista.length, [lista]);
+  const listaFiltrada = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+
+    if (!termo) return lista;
+
+    return lista.filter((f) => {
+      const nome = String(f.nome || "").toLowerCase();
+      return nome.includes(termo);
+    });
+  }, [lista, busca]);
+
+  const total = useMemo(() => listaFiltrada.length, [listaFiltrada]);
 
   const carregar = async () => {
     setMsg("Carregando...");
@@ -218,10 +230,21 @@ export default function ListarFuncionarios() {
     <div className="listPage">
       <h2>Funcionários cadastrados</h2>
 
-      <div className="listActions">
+      <div className="listActions listActionsTop">
         <button className="btnPrimary" onClick={carregar}>
           Atualizar
         </button>
+
+        <div className="buscaBox">
+          <input
+            type="text"
+            placeholder="Pesquisar por nome..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="inputBusca"
+          />
+        </div>
+
         <span className="total">Total: {total}</span>
       </div>
 
@@ -245,8 +268,8 @@ export default function ListarFuncionarios() {
           </thead>
 
           <tbody>
-            {lista.length > 0 ? (
-              lista.map((f) => (
+            {listaFiltrada.length > 0 ? (
+              listaFiltrada.map((f) => (
                 <tr key={f.id}>
                   <td>{f.id}</td>
                   <td>{f.nome}</td>
@@ -301,7 +324,7 @@ export default function ListarFuncionarios() {
             ) : (
               <tr>
                 <td colSpan="10" className="emptyRow">
-                  Nenhum funcionário encontrado.
+                  Nenhum funcionário encontrado para essa pesquisa.
                 </td>
               </tr>
             )}

@@ -390,3 +390,35 @@
   font-size: 13px;
   color: #444;
 }
+
+.listActionsTop {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.buscaBox {
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
+}
+
+.inputBusca {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.inputBusca::placeholder {
+  color: #cfd6e4;
+}
+
+.inputBusca:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.25);
+}

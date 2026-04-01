@@ -3,7 +3,7 @@
 ============================ */
 .listPage {
   padding: 20px;
-  font-family: system-ui, Arial;
+  font-family: system-ui, Arial, sans-serif;
   backdrop-filter: blur(4px);
   background: rgba(0, 0, 0, 0.45);
   border-radius: 14px;
@@ -61,6 +61,8 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   white-space: nowrap;
   font-size: 14px;
+  overflow: visible;
+  vertical-align: top;
 }
 
 .emptyRow {
@@ -69,7 +71,9 @@
   color: #ccc;
 }
 
-/* BOTÕES */
+/* ============================
+   BOTÕES GERAIS
+============================ */
 .btnPrimary {
   padding: 8px 14px;
   background: #0d6efd;
@@ -92,10 +96,70 @@
   border-radius: 8px;
   color: #fff;
   cursor: pointer;
+  transition: 0.2s;
+  width: 100%;
 }
 
 .btnSecondary:hover {
   background: #565e64;
+}
+
+/* ============================
+   AÇÕES DA TABELA
+============================ */
+.acoesCell {
+  min-width: 190px;
+}
+
+.acoesWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.acaoBtn {
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.acaoBtn-rosto {
+  background: #2563eb;
+}
+
+.acaoBtn-rosto:hover {
+  background: #1d4ed8;
+}
+
+.acaoBtn-rosto-ok {
+  background: #16a34a;
+}
+
+.acaoBtn-rosto-ok:hover {
+  background: #15803d;
+}
+
+.acaoBtn-ver {
+  background: #f59e0b;
+}
+
+.acaoBtn-ver:hover {
+  background: #d97706;
+}
+
+.acaoBtn-excluir {
+  background: #dc2626;
+}
+
+.acaoBtn-excluir:hover {
+  background: #b91c1c;
 }
 
 /* ============================
@@ -104,7 +168,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -120,13 +184,12 @@
   background: #1a1a1a;
   padding: 28px;
   border-radius: 14px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
   gap: 22px;
   color: #fff;
-
-  margin-top: 350px; /* 👈 agora bem mais para baixo */
+  margin-top: 350px;
 }
 
 .modal-card h3 {
@@ -169,18 +232,17 @@
 
 .modal-card input:focus {
   border-color: #0d6efd;
-  box-shadow: 0 0 6px rgba(13,110,253,0.4);
+  box-shadow: 0 0 6px rgba(13, 110, 253, 0.4);
   outline: none;
 }
 
-/* ÍCONE AZUL DO TIME */
 .modal-card input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(41%) sepia(97%) saturate(2476%) hue-rotate(204deg)
-          brightness(96%) contrast(104%);
+    brightness(96%) contrast(104%);
 }
 
 /* ============================
-   SELECT (FUNÇÃO)
+   SELECT
 ============================ */
 .modal-card select {
   width: 100%;
@@ -195,7 +257,6 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-
   background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 14px center;
@@ -204,7 +265,7 @@
 
 .modal-card select:focus {
   border-color: #0d6efd;
-  box-shadow: 0 0 6px rgba(13,110,253,0.4);
+  box-shadow: 0 0 6px rgba(13, 110, 253, 0.4);
   outline: none;
 }
 
@@ -218,7 +279,7 @@
 }
 
 /* ============================
-   BOTÕES
+   BOTÕES DO MODAL
 ============================ */
 .modal-actions {
   display: flex;
@@ -253,9 +314,15 @@
   background: #e2e2e2;
 }
 
-/* RESPONSIVO */
+/* ============================
+   RESPONSIVO
+============================ */
 @media (max-width: 600px) {
   .modal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .acoesCell {
+    min-width: 170px;
   }
 }

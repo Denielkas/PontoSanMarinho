@@ -216,71 +216,43 @@ export default function ListarFuncionarios() {
                   <td>{f.intervalo_fim?.slice(0, 5)}</td>
                   <td>{f.saida?.slice(0, 5)}</td>
                   <td>{new Date(f.created_at).toLocaleString()}</td>
-                  <td>
-                    <button
-                      className="btnSecondary"
-                      onClick={() => abrirModal(f)}
-                    >
-                      Alterar
-                    </button>
 
-                    <button
-                      onClick={() => navigate(`/app/cadastrar-rosto/${f.id}`)}
-                      style={{
-                        marginTop: "6px",
-                        background: f.rosto_cadastrado ? "#16a34a" : "#2563eb",
-                        color: "#fff",
-                        border: "none",
-                        padding: "8px 12px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        display: "block",
-                        width: "100%",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {f.rosto_cadastrado ? "Rosto Cadastrado" : "Cadastrar Rosto"}
-                    </button>
-
-                    {f.possui_imagem_rosto && (
+                  <td className="acoesCell">
+                    <div className="acoesWrap">
                       <button
-                        onClick={() => verImagem(f.id)}
-                        style={{
-                          marginTop: "6px",
-                          background: "#f59e0b",
-                          color: "#fff",
-                          border: "none",
-                          padding: "8px 12px",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          display: "block",
-                          width: "100%",
-                          fontWeight: "600",
-                        }}
+                        className="btnSecondary"
+                        onClick={() => abrirModal(f)}
                       >
-                        Ver Imagem
+                        Alterar
                       </button>
-                    )}
 
-                    {f.rosto_cadastrado && (
                       <button
-                        onClick={() => excluirRosto(f.id, f.nome)}
-                        style={{
-                          marginTop: "6px",
-                          background: "#dc2626",
-                          color: "#fff",
-                          border: "none",
-                          padding: "8px 12px",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          display: "block",
-                          width: "100%",
-                          fontWeight: "600",
-                        }}
+                        onClick={() => navigate(`/app/cadastrar-rosto/${f.id}`)}
+                        className={`acaoBtn ${
+                          f.rosto_cadastrado ? "acaoBtn-rosto-ok" : "acaoBtn-rosto"
+                        }`}
                       >
-                        Excluir Rosto
+                        {f.rosto_cadastrado ? "Rosto Cadastrado" : "Cadastrar Rosto"}
                       </button>
-                    )}
+
+                      {f.possui_imagem_rosto && (
+                        <button
+                          onClick={() => verImagem(f.id)}
+                          className="acaoBtn acaoBtn-ver"
+                        >
+                          Ver Imagem
+                        </button>
+                      )}
+
+                      {f.rosto_cadastrado && (
+                        <button
+                          onClick={() => excluirRosto(f.id, f.nome)}
+                          className="acaoBtn acaoBtn-excluir"
+                        >
+                          Excluir Rosto
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

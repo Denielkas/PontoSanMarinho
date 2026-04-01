@@ -18,6 +18,11 @@
   margin-bottom: 20px;
 }
 
+.listActionsTop {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
 .total {
   opacity: 0.8;
   font-size: 16px;
@@ -28,6 +33,36 @@
   color: #ff4d4d;
   margin-bottom: 10px;
   font-weight: bold;
+}
+
+/* ============================
+   BUSCA
+============================ */
+.buscaBox {
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
+}
+
+.inputBusca {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.inputBusca::placeholder {
+  color: #cfd6e4;
+}
+
+.inputBusca:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.25);
 }
 
 /* ============================
@@ -62,7 +97,7 @@
   white-space: nowrap;
   font-size: 14px;
   overflow: visible;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .emptyRow {
@@ -90,14 +125,15 @@
 }
 
 .btnSecondary {
-  padding: 7px 12px;
+  padding: 11px 14px;
   background: #6c757d;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
   cursor: pointer;
   transition: 0.2s;
   width: 100%;
+  font-weight: 700;
 }
 
 .btnSecondary:hover {
@@ -108,25 +144,44 @@
    AÇÕES DA TABELA
 ============================ */
 .acoesCell {
-  min-width: 190px;
+  min-width: 90px;
+  text-align: center;
 }
 
-.acoesWrap {
+.btnAcoes {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: #111827;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.btnAcoes:hover {
+  background: #1f2937;
+  transform: scale(1.04);
+}
+
+.acoesModalLista {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  width: 100%;
+  gap: 12px;
 }
 
 .acaoBtn {
   color: #fff;
   border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
   cursor: pointer;
   display: block;
   width: 100%;
-  font-weight: 600;
+  font-weight: 700;
   transition: 0.2s;
 }
 
@@ -189,7 +244,6 @@
   flex-direction: column;
   gap: 22px;
   color: #fff;
-  margin-top: 350px;
 }
 
 .modal-card h3 {
@@ -198,6 +252,33 @@
   font-size: 22px;
   color: #0d6efd;
   font-weight: 700;
+}
+
+.modal-acoes-card {
+  width: min(420px, 95vw);
+  gap: 18px;
+}
+
+.modal-acoes-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-acoes-topo h3 {
+  text-align: left;
+  color: #fff;
+  font-size: 20px;
+}
+
+.modal-fechar-x {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 /* ============================
@@ -315,18 +396,8 @@
 }
 
 /* ============================
-   RESPONSIVO
+   MODAL DE IMAGEM
 ============================ */
-@media (max-width: 600px) {
-  .modal-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .acoesCell {
-    min-width: 170px;
-  }
-}
-
 .modal-imagem-card {
   width: min(92vw, 720px);
   max-height: 90vh;
@@ -339,15 +410,6 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
-}
-
-.modal-fechar-x {
-  border: none;
-  background: transparent;
-  color: #333;
-  font-size: 30px;
-  line-height: 1;
-  cursor: pointer;
 }
 
 .modal-imagem-nome {
@@ -391,34 +453,27 @@
   color: #444;
 }
 
-.listActionsTop {
-  flex-wrap: wrap;
-  justify-content: space-between;
-}
+/* ============================
+   RESPONSIVO
+============================ */
+@media (max-width: 600px) {
+  .modal-grid {
+    grid-template-columns: 1fr;
+  }
 
-.buscaBox {
-  flex: 1;
-  min-width: 240px;
-  max-width: 420px;
-}
+  .acoesCell {
+    min-width: 80px;
+  }
 
-.inputBusca {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 15px;
-  outline: none;
-  box-sizing: border-box;
-}
+  .modal-actions {
+    flex-direction: column;
+  }
 
-.inputBusca::placeholder {
-  color: #cfd6e4;
-}
+  .modal-actions button {
+    width: 100%;
+  }
 
-.inputBusca:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 8px rgba(13, 110, 253, 0.25);
+  .modal-card input {
+    width: 100%;
+  }
 }

@@ -46,6 +46,9 @@ export default function ListarFuncionarios() {
   const [imagemCarregando, setImagemCarregando] = useState(false);
   const [erroImagem, setErroImagem] = useState(false);
 
+  const [acoesModalOpen, setAcoesModalOpen] = useState(false);
+  const [funcionarioAcoes, setFuncionarioAcoes] = useState(null);
+
   const [form, setForm] = useState({
     nome: "",
     cpf: "",
@@ -117,6 +120,16 @@ export default function ListarFuncionarios() {
     setEditing(null);
   };
 
+  const abrirModalAcoes = (f) => {
+    setFuncionarioAcoes(f);
+    setAcoesModalOpen(true);
+  };
+
+  const fecharModalAcoes = () => {
+    setAcoesModalOpen(false);
+    setFuncionarioAcoes(null);
+  };
+
   const fecharModalImagem = () => {
     setImagemModalOpen(false);
     setImagemModalUrl("");
@@ -181,11 +194,10 @@ export default function ListarFuncionarios() {
 
       const urlFinal = montarUrlAbsoluta(data.imagem_url);
 
-      console.log("URL FINAL DA IMAGEM:", urlFinal);
-
       setImagemModalUrl(urlFinal);
       setImagemModalNome(nome || "Imagem do rosto");
       setImagemModalOpen(true);
+      setAcoesModalOpen(false);
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao abrir imagem.");
     } finally {
@@ -220,6 +232,7 @@ export default function ListarFuncionarios() {
         fecharModalImagem();
       }
 
+      fecharModalAcoes();
       alert("Cadastro facial excluído com sucesso.");
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao excluir cadastro facial.");
@@ -282,42 +295,13 @@ export default function ListarFuncionarios() {
                   <td>{new Date(f.created_at).toLocaleString()}</td>
 
                   <td className="acoesCell">
-                    <div className="acoesWrap">
-                      <button
-                        className="btnSecondary"
-                        onClick={() => abrirModal(f)}
-                      >
-                        Alterar
-                      </button>
-
-                      <button
-                        onClick={() => navigate(`/app/cadastrar-rosto/${f.id}`)}
-                        className={`acaoBtn ${
-                          f.rosto_cadastrado ? "acaoBtn-rosto-ok" : "acaoBtn-rosto"
-                        }`}
-                      >
-                        {f.rosto_cadastrado ? "Rosto Cadastrado" : "Cadastrar Rosto"}
-                      </button>
-
-                      {f.possui_imagem_rosto && (
-                        <button
-                          onClick={() => verImagem(f.id, f.nome)}
-                          className="acaoBtn acaoBtn-ver"
-                          disabled={imagemCarregando}
-                        >
-                          {imagemCarregando ? "Abrindo..." : "Ver Imagem"}
-                        </button>
-                      )}
-
-                      {f.rosto_cadastrado && (
-                        <button
-                          onClick={() => excluirRosto(f.id, f.nome)}
-                          className="acaoBtn acaoBtn-excluir"
-                        >
-                          Excluir Rosto
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      className="btnAcoes"
+                      onClick={() => abrirModalAcoes(f)}
+                      title="Abrir ações"
+                    >
+                      ⚙
+                    </button>
                   </td>
                 </tr>
               ))
@@ -331,6 +315,73 @@ export default function ListarFuncionarios() {
           </tbody>
         </table>
       </div>
+
+      {acoesModalOpen && funcionarioAcoes && (
+        <div className="modal-overlay" onClick={fecharModalAcoes}>
+          <div
+            className="modal-card modal-acoes-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-acoes-topo">
+              <h3>Ações — {funcionarioAcoes.nome}</h3>
+              <button className="modal-fechar-x" onClick={fecharModalAcoes}>
+                ×
+              </button>
+            </div>
+
+            <div className="acoesModalLista">
+              <button
+                className="btnSecondary"
+                onClick={() => {
+                  fecharModalAcoes();
+                  abrirModal(funcionarioAcoes);
+                }}
+              >
+                Alterar
+              </button>
+
+              <button
+                onClick={() => {
+                  fecharModalAcoes();
+                  navigate(`/app/cadastrar-rosto/${funcionarioAcoes.id}`);
+                }}
+                className={`acaoBtn ${
+                  funcionarioAcoes.rosto_cadastrado
+                    ? "acaoBtn-rosto-ok"
+                    : "acaoBtn-rosto"
+                }`}
+              >
+                {funcionarioAcoes.rosto_cadastrado
+                  ? "Rosto Cadastrado"
+                  : "Cadastrar Rosto"}
+              </button>
+
+              {funcionarioAcoes.possui_imagem_rosto && (
+                <button
+                  onClick={() =>
+                    verImagem(funcionarioAcoes.id, funcionarioAcoes.nome)
+                  }
+                  className="acaoBtn acaoBtn-ver"
+                  disabled={imagemCarregando}
+                >
+                  {imagemCarregando ? "Abrindo..." : "Ver Imagem"}
+                </button>
+              )}
+
+              {funcionarioAcoes.rosto_cadastrado && (
+                <button
+                  onClick={() =>
+                    excluirRosto(funcionarioAcoes.id, funcionarioAcoes.nome)
+                  }
+                  className="acaoBtn acaoBtn-excluir"
+                >
+                  Excluir Rosto
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {open && (
         <div className="modal-overlay" onClick={fecharModal}>
@@ -461,7 +512,6 @@ export default function ListarFuncionarios() {
                   alt={`Rosto de ${imagemModalNome}`}
                   className="modal-imagem-preview"
                   onError={() => {
-                    console.log("ERRO AO CARREGAR IMAGEM:", imagemModalUrl);
                     setErroImagem(true);
                   }}
                 />

@@ -217,26 +217,12 @@ exports.verImagemRosto = async (req, res) => {
 ========================================= */
 exports.excluirImagemRosto = async (req, res) => {
   try {
+    await garantirTabelas();
+
     const id = Number(req.params.id);
 
-    if (!id) {
+    if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ error: "ID inválido." });
-    }
-
-    const existe = await pool.query(
-      `
-      SELECT funcionario_id, foto_path, embedding
-      FROM face_embeddings
-      WHERE funcionario_id = $1
-      LIMIT 1
-      `,
-      [id]
-    );
-
-    if (existe.rowCount === 0) {
-      return res.status(404).json({
-        error: "Nenhum cadastro facial encontrado para este funcionário.",
-      });
     }
 
     const result = await pool.query(
@@ -251,6 +237,12 @@ exports.excluirImagemRosto = async (req, res) => {
       [id]
     );
 
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        error: "Nenhum cadastro facial encontrado para este funcionário.",
+      });
+    }
+
     return res.json({
       ok: true,
       message: "Cadastro facial excluído com sucesso.",
@@ -258,7 +250,9 @@ exports.excluirImagemRosto = async (req, res) => {
     });
   } catch (err) {
     console.error("Erro ao excluir cadastro facial:", err);
-    return res.status(500).json({ error: "Erro ao excluir cadastro facial." });
+    return res.status(500).json({
+      error: err.message || "Erro ao excluir cadastro facial.",
+    });
   }
 };
 

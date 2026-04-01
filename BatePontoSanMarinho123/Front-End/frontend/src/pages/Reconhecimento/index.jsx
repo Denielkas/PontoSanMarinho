@@ -16,6 +16,9 @@ export default function Reconhecimento() {
   const confirmOpenRef = useRef(false);
   const mountedRef = useRef(true);
 
+  const lastMatchedIdRef = useRef(null);
+  const stableCountRef = useRef(0);
+
   const [msg, setMsg] = useState("Detectando rosto...");
   const [working, setWorking] = useState(false);
 
@@ -38,6 +41,11 @@ export default function Reconhecimento() {
     }
   }, []);
 
+  const resetStableRecognition = useCallback(() => {
+    lastMatchedIdRef.current = null;
+    stableCountRef.current = 0;
+  }, []);
+
   const captureFrame = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -58,6 +66,7 @@ export default function Reconhecimento() {
 
   const startRecognitionLoop = useCallback(() => {
     stopRecognitionLoop();
+    resetStableRecognition();
 
     frameLoopRef.current = setInterval(async () => {
       if (!mountedRef.current) return;
@@ -75,27 +84,55 @@ export default function Reconhecimento() {
         });
 
         if (data?.matched && data?.funcionario_id) {
-          stopRecognitionLoop();
+          const funcionarioId = Number(data.funcionario_id);
 
-          setMsg("Rosto reconhecido...");
+          if (lastMatchedIdRef.current === funcionarioId) {
+            stableCountRef.current += 1;
+          } else {
+            lastMatchedIdRef.current = funcionarioId;
+            stableCountRef.current = 1;
+          }
 
-          const funcionarioId = data.funcionario_id;
-          setFuncId(funcionarioId);
+          setMsg(
+            `Validando rosto... (${stableCountRef.current}/2) distância: ${
+              typeof data.distance === "number"
+                ? data.distance.toFixed(3)
+                : "-"
+            }`
+          );
 
-          const response = await api.get(`/funcionarios/public/${funcionarioId}`);
+          if (stableCountRef.current >= 2) {
+            stopRecognitionLoop();
 
-          setFuncNome(response.data?.nome || "");
-          setFuncCpf(response.data?.cpf || "");
+            setMsg("Rosto reconhecido...");
+            setFuncId(funcionarioId);
 
-          confirmOpenRef.current = true;
-          setConfirmOpen(true);
+            const response = await api.get(`/funcionarios/public/${funcionarioId}`);
 
-          setMsg("Confirme sua identidade");
+            setFuncNome(response.data?.nome || "");
+            setFuncCpf(response.data?.cpf || "");
+
+            confirmOpenRef.current = true;
+            setConfirmOpen(true);
+
+            setMsg("Confirme sua identidade");
+          }
         } else {
-          setMsg("Procurando rosto...");
+          resetStableRecognition();
+
+          if (data?.reason === "ambiguous_match") {
+            setMsg("Rosto parecido com mais de uma pessoa. Centralize melhor.");
+          } else if (data?.reason === "distance_above_tolerance") {
+            setMsg("Procurando rosto...");
+          } else if (data?.error === "no_face") {
+            setMsg("Nenhum rosto detectado.");
+          } else {
+            setMsg("Procurando rosto...");
+          }
         }
       } catch (err) {
         console.error("Erro no reconhecimento:", err);
+        resetStableRecognition();
         setMsg("Erro ao reconhecer rosto.");
       } finally {
         workingRef.current = false;
@@ -103,8 +140,8 @@ export default function Reconhecimento() {
           setWorking(false);
         }
       }
-    }, 1500);
-  }, [captureFrame, stopRecognitionLoop]);
+    }, 1200);
+  }, [captureFrame, stopRecognitionLoop, resetStableRecognition]);
 
   const obterCameraFrontal = useCallback(async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -168,6 +205,7 @@ export default function Reconhecimento() {
 
         stopRecognitionLoop();
         stopCamera();
+        resetStableRecognition();
 
         const stream = await obterCameraFrontal();
 
@@ -196,8 +234,9 @@ export default function Reconhecimento() {
       mountedRef.current = false;
       stopRecognitionLoop();
       stopCamera();
+      resetStableRecognition();
     };
-  }, [obterCameraFrontal, startRecognitionLoop, stopRecognitionLoop, stopCamera]);
+  }, [obterCameraFrontal, startRecognitionLoop, stopRecognitionLoop, stopCamera, resetStableRecognition]);
 
   const cancelarIdentidade = () => {
     confirmOpenRef.current = false;
@@ -205,6 +244,7 @@ export default function Reconhecimento() {
     setFuncId(null);
     setFuncNome("");
     setFuncCpf("");
+    resetStableRecognition();
     setMsg("Detectando rosto...");
     startRecognitionLoop();
   };

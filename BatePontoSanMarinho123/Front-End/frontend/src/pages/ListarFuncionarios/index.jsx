@@ -43,6 +43,7 @@ export default function ListarFuncionarios() {
   const [imagemModalUrl, setImagemModalUrl] = useState("");
   const [imagemModalNome, setImagemModalNome] = useState("");
   const [imagemCarregando, setImagemCarregando] = useState(false);
+  const [erroImagem, setErroImagem] = useState(false);
 
   const [form, setForm] = useState({
     nome: "",
@@ -109,6 +110,7 @@ export default function ListarFuncionarios() {
     setImagemModalUrl("");
     setImagemModalNome("");
     setImagemCarregando(false);
+    setErroImagem(false);
   };
 
   const onChange = (e) => {
@@ -156,16 +158,18 @@ export default function ListarFuncionarios() {
   const verImagem = async (funcionarioId, nome) => {
     try {
       setImagemCarregando(true);
+      setErroImagem(false);
 
       const { data } = await api.get(`/funcionarios/${funcionarioId}/imagem`);
 
       if (!data?.imagem_url) {
-        setImagemCarregando(false);
         alert("Este funcionário não possui imagem salva.");
         return;
       }
 
       const urlFinal = montarUrlAbsoluta(data.imagem_url);
+
+      console.log("URL FINAL DA IMAGEM:", urlFinal);
 
       setImagemModalUrl(urlFinal);
       setImagemModalNome(nome || "Imagem do rosto");
@@ -428,11 +432,22 @@ export default function ListarFuncionarios() {
             <p className="modal-imagem-nome">{imagemModalNome}</p>
 
             <div className="modal-imagem-wrap">
-              <img
-                src={imagemModalUrl}
-                alt={`Rosto de ${imagemModalNome}`}
-                className="modal-imagem-preview"
-              />
+              {!erroImagem ? (
+                <img
+                  src={imagemModalUrl}
+                  alt={`Rosto de ${imagemModalNome}`}
+                  className="modal-imagem-preview"
+                  onError={() => {
+                    console.log("ERRO AO CARREGAR IMAGEM:", imagemModalUrl);
+                    setErroImagem(true);
+                  }}
+                />
+              ) : (
+                <div className="modal-imagem-erro-box">
+                  <p>Não foi possível carregar a imagem.</p>
+                  <p className="modal-imagem-url">{imagemModalUrl}</p>
+                </div>
+              )}
             </div>
 
             <div className="modal-actions">

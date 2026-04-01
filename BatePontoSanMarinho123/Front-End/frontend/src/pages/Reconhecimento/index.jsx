@@ -25,7 +25,6 @@ export default function Reconhecimento() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [funcId, setFuncId] = useState(null);
   const [funcNome, setFuncNome] = useState("");
-  const [funcCpf, setFuncCpf] = useState("");
 
   const stopRecognitionLoop = useCallback(() => {
     if (frameLoopRef.current) {
@@ -110,7 +109,6 @@ export default function Reconhecimento() {
             const response = await api.get(`/funcionarios/public/${funcionarioId}`);
 
             setFuncNome(response.data?.nome || "");
-            setFuncCpf(response.data?.cpf || "");
 
             confirmOpenRef.current = true;
             setConfirmOpen(true);
@@ -236,14 +234,19 @@ export default function Reconhecimento() {
       stopCamera();
       resetStableRecognition();
     };
-  }, [obterCameraFrontal, startRecognitionLoop, stopRecognitionLoop, stopCamera, resetStableRecognition]);
+  }, [
+    obterCameraFrontal,
+    startRecognitionLoop,
+    stopRecognitionLoop,
+    stopCamera,
+    resetStableRecognition,
+  ]);
 
   const cancelarIdentidade = () => {
     confirmOpenRef.current = false;
     setConfirmOpen(false);
     setFuncId(null);
     setFuncNome("");
-    setFuncCpf("");
     resetStableRecognition();
     setMsg("Detectando rosto...");
     startRecognitionLoop();
@@ -257,7 +260,6 @@ export default function Reconhecimento() {
         funcionario: {
           id: funcId,
           nome: funcNome,
-          cpf: funcCpf,
         },
       },
     });
@@ -294,13 +296,7 @@ export default function Reconhecimento() {
           <div className="modalCard" onClick={(e) => e.stopPropagation()}>
             <h3>Confirmar identidade</h3>
 
-            <p>
-              <strong>{funcNome}</strong>
-            </p>
-
-            <p>
-              CPF: <strong>{funcCpf}</strong>
-            </p>
+            <p className="confirmNome">{funcNome}</p>
 
             <div className="modalActions">
               <button onClick={cancelarIdentidade}>Não sou eu</button>

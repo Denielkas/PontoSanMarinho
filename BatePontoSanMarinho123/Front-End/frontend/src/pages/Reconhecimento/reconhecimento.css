@@ -116,32 +116,40 @@
   padding: 22px;
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  text-align: center;
 }
 
 .modalCard h3 {
   margin: 0 0 16px 0;
   font-size: 24px;
   font-weight: 800;
+  color: #111827;
 }
 
-.modalCard p {
-  margin: 8px 0;
-  font-size: 16px;
+.confirmNome {
+  margin: 10px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+  word-break: break-word;
 }
 
 .modalActions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 22px;
   flex-wrap: wrap;
 }
 
 .modalActions button {
-  padding: 10px 16px;
+  min-width: 140px;
+  padding: 12px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 700;
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -177,6 +185,34 @@
     font-size: 17px;
     padding: 13px 24px;
   }
+
+  .modalCard {
+    width: min(560px, 92vw);
+    padding: 32px 28px;
+    border-radius: 20px;
+  }
+
+  .modalCard h3 {
+    font-size: 34px;
+    margin-bottom: 20px;
+  }
+
+  .confirmNome {
+    font-size: 42px;
+    margin-top: 8px;
+  }
+
+  .modalActions {
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  .modalActions button {
+    min-width: 190px;
+    padding: 18px 24px;
+    font-size: 24px;
+    border-radius: 14px;
+  }
 }
 
 @media (min-width: 600px) and (max-width: 1024px) and (orientation: portrait) {
@@ -207,11 +243,26 @@
     width: 100%;
   }
 
+  .modalCard {
+    padding: 20px 16px;
+  }
+
+  .modalCard h3 {
+    font-size: 22px;
+  }
+
+  .confirmNome {
+    font-size: 26px;
+  }
+
   .modalActions {
     flex-direction: column;
   }
 
   .modalActions button {
     width: 100%;
+    min-width: 100%;
+    font-size: 18px;
+    padding: 14px 16px;
   }
 }

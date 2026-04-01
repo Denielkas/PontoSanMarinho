@@ -124,6 +124,10 @@ exports.buscarPorId = async (req, res) => {
 
     const id = Number(req.params.id);
 
+    if (!id) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
+
     const { rows } = await pool.query(
       `
       SELECT 
@@ -166,6 +170,10 @@ exports.verImagemRosto = async (req, res) => {
   try {
     const id = Number(req.params.id);
 
+    if (!id) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
+
     const { rows } = await pool.query(
       `
       SELECT foto_path
@@ -195,6 +203,7 @@ exports.verImagemRosto = async (req, res) => {
     }
 
     return res.json({
+      ok: true,
       imagem_url: imagemUrl,
     });
   } catch (err) {
@@ -210,13 +219,34 @@ exports.excluirImagemRosto = async (req, res) => {
   try {
     const id = Number(req.params.id);
 
-    await pool.query(
+    if (!id) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
+
+    const existe = await pool.query(
+      `
+      SELECT funcionario_id, foto_path, embedding
+      FROM face_embeddings
+      WHERE funcionario_id = $1
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (existe.rowCount === 0) {
+      return res.status(404).json({
+        error: "Nenhum cadastro facial encontrado para este funcionário.",
+      });
+    }
+
+    const result = await pool.query(
       `
       UPDATE face_embeddings
       SET foto_path = NULL,
           embedding = NULL,
           updated_at = NOW()
       WHERE funcionario_id = $1
+      RETURNING funcionario_id
       `,
       [id]
     );
@@ -224,6 +254,7 @@ exports.excluirImagemRosto = async (req, res) => {
     return res.json({
       ok: true,
       message: "Cadastro facial excluído com sucesso.",
+      funcionario_id: result.rows[0].funcionario_id,
     });
   } catch (err) {
     console.error("Erro ao excluir cadastro facial:", err);
@@ -278,6 +309,10 @@ exports.criar = async (req, res) => {
 exports.atualizar = async (req, res) => {
   try {
     const id = Number(req.params.id);
+
+    if (!id) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
 
     let {
       nome,

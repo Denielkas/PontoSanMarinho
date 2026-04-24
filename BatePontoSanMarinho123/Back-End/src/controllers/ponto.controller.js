@@ -185,6 +185,9 @@ function normalizarHora(valor) {
   return null;
 }
 
+/* =========================================
+   BUSCAS DE PONTO
+========================================= */
 async function buscarPontosHoje(funcionario_id) {
   const hoje = dataHojeISO();
 
@@ -202,6 +205,55 @@ async function buscarPontosHoje(funcionario_id) {
   return rows;
 }
 
+/* 
+   CORREÇÃO PRINCIPAL:
+   Busca o turno aberto nas últimas 36 horas.
+   Assim, se o funcionário entrou 17:30 e saiu 05:30 no outro dia,
+   o sistema ainda entende que o turno está aberto.
+*/
+async function buscarBatidasTurnoAberto(funcionario_id) {
+  const { rows } = await pool.query(
+    `
+    SELECT id, tipo, marcado_em
+    FROM pontos
+    WHERE funcionario_id = $1
+      AND marcado_em >= (NOW() - INTERVAL '36 hours')
+    ORDER BY marcado_em ASC, id ASC
+    `,
+    [funcionario_id]
+  );
+
+  if (!rows.length) return [];
+
+  let indiceUltimaSaida = -1;
+
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i].tipo === "saida") {
+      indiceUltimaSaida = i;
+      break;
+    }
+  }
+
+  const abertas = rows.slice(indiceUltimaSaida + 1);
+
+  const temEntradaAberta = abertas.some((p) => p.tipo === "entrada");
+
+  if (!temEntradaAberta) return [];
+
+  return abertas;
+}
+
+async function buscarUltimaBatidaAberta(funcionario_id) {
+  const abertas = await buscarBatidasTurnoAberto(funcionario_id);
+
+  if (!abertas.length) return null;
+
+  return abertas[abertas.length - 1];
+}
+
+/* =========================================
+   PERMISSÕES DOS BOTÕES
+========================================= */
 function getPermissoesPorUltimaBatida(ultimaBatida) {
   const permissoes = {
     entrada: false,
@@ -241,6 +293,9 @@ function getPermissoesPorUltimaBatida(ultimaBatida) {
   return permissoes;
 }
 
+/* =========================================
+   STATUS DOS BOTÕES
+========================================= */
 exports.statusBatidas = async (req, res) => {
   try {
     await garantirTabelas();
@@ -252,10 +307,9 @@ exports.statusBatidas = async (req, res) => {
     }
 
     const pontosHoje = await buscarPontosHoje(funcionario_id);
-    const ultimaBatida = pontosHoje.length
-      ? pontosHoje[pontosHoje.length - 1].tipo
-      : null;
+    const ultimaBatidaAberta = await buscarUltimaBatidaAberta(funcionario_id);
 
+    const ultimaBatida = ultimaBatidaAberta ? ultimaBatidaAberta.tipo : null;
     const permissoes = getPermissoesPorUltimaBatida(ultimaBatida);
 
     return res.json({
@@ -270,6 +324,9 @@ exports.statusBatidas = async (req, res) => {
   }
 };
 
+/* =========================================
+   AUTO — RECONHECIMENTO FACIAL
+========================================= */
 exports.auto = async (req, res) => {
   try {
     await garantirTabelas();
@@ -280,16 +337,33 @@ exports.auto = async (req, res) => {
       return res.status(400).json({ error: "Funcionário inválido" });
     }
 
-    const pontosHoje = await buscarPontosHoje(funcionario_id);
+    const ultimaBatidaAberta = await buscarUltimaBatidaAberta(funcionario_id);
+    const ultimaBatida = ultimaBatidaAberta ? ultimaBatidaAberta.tipo : null;
 
-    if (pontosHoje.length >= 4) {
+    const permissoes = getPermissoesPorUltimaBatida(ultimaBatida);
+
+    let tipo = null;
+
+    if (!ultimaBatidaAberta) {
+      tipo = "entrada";
+    } else if (ultimaBatida === "entrada") {
+      tipo = "saida";
+    } else if (ultimaBatida === "intervalo_inicio") {
+      tipo = "intervalo_fim";
+    } else if (ultimaBatida === "intervalo_fim") {
+      tipo = "saida";
+    } else if (ultimaBatida === "saida") {
+      tipo = "entrada";
+    }
+
+    if (!tipo || !permissoes[tipo]) {
       return res.status(403).json({
-        error: "Você já possui 4 batidas hoje.",
+        error: "Não foi possível determinar a próxima batida automaticamente.",
+        ultima_batida: ultimaBatida,
+        permissoes,
       });
     }
 
-    const ordem = ["entrada", "intervalo_inicio", "intervalo_fim", "saida"];
-    const tipo = ordem[pontosHoje.length];
     const marcado_em = dataHoraAgoraSQL();
 
     const { rows } = await pool.query(
@@ -308,6 +382,9 @@ exports.auto = async (req, res) => {
   }
 };
 
+/* =========================================
+   BATER
+========================================= */
 exports.bater = async (req, res) => {
   try {
     await garantirTabelas();
@@ -322,10 +399,8 @@ exports.bater = async (req, res) => {
       return res.status(400).json({ error: "Tipo de ponto inválido!" });
     }
 
-    const pontosHoje = await buscarPontosHoje(funcionario_id);
-    const ultimaBatida = pontosHoje.length
-      ? pontosHoje[pontosHoje.length - 1].tipo
-      : null;
+    const ultimaBatidaAberta = await buscarUltimaBatidaAberta(funcionario_id);
+    const ultimaBatida = ultimaBatidaAberta ? ultimaBatidaAberta.tipo : null;
 
     const permissoes = getPermissoesPorUltimaBatida(ultimaBatida);
 
@@ -355,6 +430,9 @@ exports.bater = async (req, res) => {
   }
 };
 
+/* =========================================
+   INSERIR MANUAL
+========================================= */
 exports.inserirManual = async (req, res) => {
   try {
     await garantirTabelas();
@@ -391,6 +469,9 @@ exports.inserirManual = async (req, res) => {
   }
 };
 
+/* =========================================
+   AJUSTAR
+========================================= */
 exports.ajustar = async (req, res) => {
   const client = await pool.connect();
 
@@ -561,6 +642,9 @@ exports.ajustar = async (req, res) => {
   }
 };
 
+/* =========================================
+   LIMPAR BATIDAS DO DIA
+========================================= */
 exports.limparBatidasDoDia = async (req, res) => {
   try {
     await garantirTabelas();
@@ -603,6 +687,9 @@ exports.limparBatidasDoDia = async (req, res) => {
   }
 };
 
+/* =========================================
+   LANÇAR HORÁRIO PADRÃO NO MÊS
+========================================= */
 exports.lancarHorarioPadraoMes = async (req, res) => {
   const client = await pool.connect();
 
@@ -698,7 +785,9 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
 
       if (
         ajusteExistente.length > 0 &&
-        (ajusteExistente[0].falta || ajusteExistente[0].folga || ajusteExistente[0].ferias)
+        (ajusteExistente[0].falta ||
+          ajusteExistente[0].folga ||
+          ajusteExistente[0].ferias)
       ) {
         diasIgnorados++;
         detalhes.push({
@@ -794,6 +883,9 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
   }
 };
 
+/* =========================================
+   BUSCAR PONTOS POR CPF
+========================================= */
 exports.buscarPorCPF = async (req, res) => {
   try {
     await garantirTabelas();
@@ -821,7 +913,6 @@ exports.buscarPorCPF = async (req, res) => {
     }
 
     const funcionario = funcs[0];
-    const hoje = dataHojeISO();
 
     const { rows: pontos } = await pool.query(
       `
@@ -833,10 +924,10 @@ exports.buscarPorCPF = async (req, res) => {
         marcado_em
       FROM pontos
       WHERE funcionario_id = $1
-        AND marcado_em::date = $2::date
+        AND marcado_em >= (NOW() - INTERVAL '36 hours')
       ORDER BY marcado_em ASC, id ASC
       `,
-      [funcionario.id, hoje]
+      [funcionario.id]
     );
 
     return res.json({ funcionario, pontos });

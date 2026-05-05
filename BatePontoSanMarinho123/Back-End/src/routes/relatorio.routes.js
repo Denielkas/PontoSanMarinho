@@ -538,6 +538,26 @@ function criarCargaHoraria(ws, funcionario) {
   ws.getColumn("M").width = 12;
 }
 
+function formatarHoraExcelAutomatico(valor) {
+  if (valor === null || valor === undefined) return "";
+
+  let texto = String(valor).replace(/\D/g, "");
+
+  if (!texto) return "";
+
+  if (texto.length === 1) {
+    texto = `0${texto}:00`;
+  } else if (texto.length === 2) {
+    texto = `${texto}:00`;
+  } else if (texto.length === 3) {
+    texto = `0${texto[0]}:${texto.slice(1)}`;
+  } else if (texto.length >= 4) {
+    texto = `${texto.slice(0, 2)}:${texto.slice(2, 4)}`;
+  }
+
+  return texto;
+}
+
 function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   const saldoTextoFuncionario = formatarSaldoMinutos(somarSaldo(dados));
 

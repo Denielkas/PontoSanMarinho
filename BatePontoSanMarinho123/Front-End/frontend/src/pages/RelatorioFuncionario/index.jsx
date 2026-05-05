@@ -36,6 +36,9 @@ export default function RelatorioFuncionario() {
     falta: false,
     folga: false,
     ferias: false,
+    falta_justificada: false,
+    justificativa_falta: "",
+    feriado: false,
   });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -45,6 +48,13 @@ export default function RelatorioFuncionario() {
 
   const [salvando, setSalvando] = useState(false);
   const [limpandoBatidas, setLimpandoBatidas] = useState(false);
+
+  function limparValor(valor) {
+    if (!valor) return "";
+    if (valor === "--:--") return "";
+    if (valor === "--") return "";
+    return valor;
+  }
 
   const abrirModal = (titulo, texto, erro = false) => {
     setModalTitulo(titulo);
@@ -73,7 +83,7 @@ export default function RelatorioFuncionario() {
 
   function calcularSaldoTexto(resultado) {
     const totalMinutos = resultado.reduce((acc, r) => {
-      if (r.folga || r.ferias || r.atestado) return acc;
+      if (r.folga || r.ferias || r.atestado || r.falta_justificada) return acc;
 
       const saldo = Number(r.saldo_bruto) || 0;
 
@@ -126,13 +136,10 @@ export default function RelatorioFuncionario() {
     }
 
     try {
-      let rota = "";
-
-      if (funcId === "todos") {
-        rota = `/relatorio/pdf/todos?mes=${mes}&ano=${ano}`;
-      } else {
-        rota = `/relatorio/pdf/${funcId}?mes=${mes}&ano=${ano}`;
-      }
+      const rota =
+        funcId === "todos"
+          ? `/relatorio/pdf/todos?mes=${mes}&ano=${ano}`
+          : `/relatorio/pdf/${funcId}?mes=${mes}&ano=${ano}`;
 
       const response = await api.get(rota, {
         responseType: "blob",
@@ -161,13 +168,10 @@ export default function RelatorioFuncionario() {
     }
 
     try {
-      let rota = "";
-
-      if (funcId === "todos") {
-        rota = `/relatorio/excel/todos?mes=${mes}&ano=${ano}`;
-      } else {
-        rota = `/relatorio/excel/${funcId}?mes=${mes}&ano=${ano}`;
-      }
+      const rota =
+        funcId === "todos"
+          ? `/relatorio/excel/todos?mes=${mes}&ano=${ano}`
+          : `/relatorio/excel/${funcId}?mes=${mes}&ano=${ano}`;
 
       const response = await api.get(rota, {
         responseType: "blob",
@@ -224,7 +228,7 @@ export default function RelatorioFuncionario() {
     const nomeFuncionario = funcionarioSelecionado?.nome || "funcionário";
 
     const confirmado = window.confirm(
-      `Deseja lançar o horário padrão salvo no banco de dados para TODOS os dias de ${mes}/${ano} do funcionário ${nomeFuncionario}?\n\nDias que já possuem pontos, atestado, falta, folga ou férias serão ignorados.`
+      `Deseja lançar o horário padrão salvo no banco de dados para TODOS os dias de ${mes}/${ano} do funcionário ${nomeFuncionario}?\n\nDias que já possuem pontos, atestado, falta, folga, férias ou falta justificada serão ignorados.`
     );
 
     if (!confirmado) return;
@@ -264,24 +268,52 @@ export default function RelatorioFuncionario() {
       funcionario_id: linha.funcionario_id,
       ids_originais: linha.ids_originais || {},
       data: linha.data,
-      entrada: linha.entrada !== "--:--" ? linha.entrada : "",
-      intervalo_inicio:
-        linha.intervalo_inicio !== "--:--" ? linha.intervalo_inicio : "",
-      intervalo_fim: linha.intervalo_fim !== "--:--" ? linha.intervalo_fim : "",
-      saida: linha.saida !== "--:--" ? linha.saida : "",
+      entrada: limparValor(linha.entrada),
+      intervalo_inicio: limparValor(linha.intervalo_inicio),
+      intervalo_fim: limparValor(linha.intervalo_fim),
+      saida: limparValor(linha.saida),
       falta: !!linha.falta,
       folga: !!linha.folga,
       ferias: !!linha.ferias,
+      falta_justificada: !!linha.falta_justificada,
+      justificativa_falta: linha.justificativa_falta || "",
+      feriado: !!linha.feriado,
     });
 
     setEditOpen(true);
+  }
+
+  function alternarAcao(campo, valor) {
+    if (campo === "feriado") {
+      setEditData({
+        ...editData,
+        feriado: valor,
+      });
+      return;
+    }
+
+    setEditData({
+      ...editData,
+      falta: campo === "falta" ? valor : false,
+      folga: campo === "folga" ? valor : false,
+      ferias: campo === "ferias" ? valor : false,
+      falta_justificada: campo === "falta_justificada" ? valor : false,
+      justificativa_falta:
+        campo === "falta_justificada"
+          ? editData.justificativa_falta
+          : "",
+    });
   }
 
   async function salvarAlteracao() {
     try {
       setSalvando(true);
 
-      const bloqueado = editData.falta || editData.folga || editData.ferias;
+      const bloqueado =
+        editData.falta ||
+        editData.folga ||
+        editData.ferias ||
+        editData.falta_justificada;
 
       await api.put("/ponto/ajustar", {
         funcionario_id: funcId,
@@ -291,9 +323,13 @@ export default function RelatorioFuncionario() {
         intervalo: bloqueado ? "" : editData.intervalo_inicio,
         retorno: bloqueado ? "" : editData.intervalo_fim,
         saida: bloqueado ? "" : editData.saida,
+
         falta: editData.falta,
         folga: editData.folga,
         ferias: editData.ferias,
+        falta_justificada: editData.falta_justificada,
+        justificativa_falta: editData.justificativa_falta,
+        feriado: editData.feriado,
       });
 
       setEditOpen(false);
@@ -427,6 +463,12 @@ export default function RelatorioFuncionario() {
     setModalAtestado(false);
   }
 
+  const camposBloqueados =
+    editData.falta ||
+    editData.folga ||
+    editData.ferias ||
+    editData.falta_justificada;
+
   return (
     <div className="relatorio-container">
       <h2 className="relatorio-titulo">Relatório de Frequência</h2>
@@ -555,33 +597,39 @@ export default function RelatorioFuncionario() {
                   d.falta ? "linha-falta" : ""
                 } ${d.folga ? "linha-folga" : ""} ${
                   d.ferias ? "linha-ferias" : ""
-                }`}
+                } ${
+                  d.falta_justificada ? "linha-falta-justificada" : ""
+                } ${d.feriado ? "linha-feriado" : ""}`}
               >
                 <td>
                   <strong>{d.data}</strong>
                 </td>
                 <td>{d.nome}</td>
-                <td>{d.entrada}</td>
-                <td>{d.intervalo_inicio}</td>
-                <td>{d.intervalo_fim}</td>
-                <td>{d.saida}</td>
-                <td>{d.total_horas}</td>
+                <td>{limparValor(d.entrada)}</td>
+                <td>{limparValor(d.intervalo_inicio)}</td>
+                <td>{limparValor(d.intervalo_fim)}</td>
+                <td>{limparValor(d.saida)}</td>
+                <td>{limparValor(d.total_horas)}</td>
 
                 <td
                   style={{
                     fontWeight: "bold",
-                    color: d.atestado
+                    color: d.falta_justificada
+                      ? "#fca5a5"
+                      : d.atestado
                       ? "#f59e0b"
                       : d.folga
                       ? "#3b82f6"
                       : d.ferias
                       ? "#8b5cf6"
+                      : d.feriado
+                      ? "#38bdf8"
                       : d.saldo_bruto < 0
                       ? "#e74c3c"
                       : "#27ae60",
                   }}
                 >
-                  {d.folga || d.ferias || d.atestado
+                  {d.folga || d.ferias || d.atestado || d.falta_justificada
                     ? "+0h 0m"
                     : `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
                         Math.abs(d.saldo_bruto) / 60
@@ -591,10 +639,19 @@ export default function RelatorioFuncionario() {
                 <td>
                   {d.falta ? (
                     <span className="badge-falta-sim">Falta</span>
+                  ) : d.falta_justificada ? (
+                    <span
+                      className="badge-falta-justificada"
+                      title={d.justificativa_falta || ""}
+                    >
+                      Falta Justificada
+                    </span>
                   ) : d.folga ? (
                     <span className="badge-folga">Folga</span>
                   ) : d.ferias ? (
                     <span className="badge-ferias">Férias</span>
+                  ) : d.feriado ? (
+                    <span className="badge-feriado">Feriado</span>
                   ) : d.atestado ? (
                     <span className="badge-atestado">Atestado</span>
                   ) : (
@@ -657,173 +714,178 @@ export default function RelatorioFuncionario() {
 
       {editOpen && (
         <div className="modalOverlay">
-          <div className="modalCard">
+          <div className="modalCard modalCardRelatorio">
             <h3>Ajustar Turno — {editData.data}</h3>
 
-            <div className="falta-toggle-box">
-              <div className="falta-toggle-info">
-                <span className="falta-label">Falta</span>
-                <small>
-                  Se marcar <strong>Sim</strong>, o saldo do dia ficará negativo
-                  conforme a carga horária prevista.
-                </small>
+            <div className="secao-acoes-dia">
+              <div className="secao-acoes-header">
+                <h4>Ações do dia</h4>
+                <p>
+                  Marque aqui falta, folga, férias, falta justificada ou feriado.
+                </p>
               </div>
 
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={editData.falta}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      falta: e.target.checked,
-                      folga: e.target.checked ? false : editData.folga,
-                      ferias: e.target.checked ? false : editData.ferias,
-                    })
+              <div className="acoes-dia-grid">
+                <button
+                  type="button"
+                  className={`acao-dia-card falta-card ${
+                    editData.falta ? "ativo" : ""
+                  }`}
+                  onClick={() => alternarAcao("falta", !editData.falta)}
+                >
+                  <strong>Falta</strong>
+                  <small>Gera saldo negativo</small>
+                  <span>{editData.falta ? "Marcado" : "Marcar"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`acao-dia-card folga-card ${
+                    editData.folga ? "ativo" : ""
+                  }`}
+                  onClick={() => alternarAcao("folga", !editData.folga)}
+                >
+                  <strong>Folga</strong>
+                  <small>Saldo zerado</small>
+                  <span>{editData.folga ? "Marcado" : "Marcar"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`acao-dia-card ferias-card ${
+                    editData.ferias ? "ativo" : ""
+                  }`}
+                  onClick={() => alternarAcao("ferias", !editData.ferias)}
+                >
+                  <strong>Férias</strong>
+                  <small>Saldo zerado</small>
+                  <span>{editData.ferias ? "Marcado" : "Marcar"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`acao-dia-card falta-justificada-card ${
+                    editData.falta_justificada ? "ativo" : ""
+                  }`}
+                  onClick={() =>
+                    alternarAcao(
+                      "falta_justificada",
+                      !editData.falta_justificada
+                    )
                   }
-                />
-                <span className="slider"></span>
-              </label>
+                >
+                  <strong>Falta Justificada</strong>
+                  <small>Não gera negativo</small>
+                  <span>
+                    {editData.falta_justificada ? "Marcado" : "Marcar"}
+                  </span>
+                </button>
 
-              <span
-                className={editData.falta ? "switch-status sim" : "switch-status nao"}
-              >
-                {editData.falta ? "Sim" : "Não"}
-              </span>
-            </div>
-
-            <div className="falta-toggle-box folga-box">
-              <div className="falta-toggle-info">
-                <span className="falta-label">Folga</span>
-                <small>
-                  Se marcar <strong>Sim</strong>, o dia ficará como{" "}
-                  <strong>folga</strong>, com <strong>saldo zerado</strong> e
-                  destaque em azul.
-                </small>
+                <button
+                  type="button"
+                  className={`acao-dia-card feriado-card ${
+                    editData.feriado ? "ativo" : ""
+                  }`}
+                  onClick={() => alternarAcao("feriado", !editData.feriado)}
+                >
+                  <strong>Feriado</strong>
+                  <small>Conta horas normalmente</small>
+                  <span>{editData.feriado ? "Marcado" : "Marcar"}</span>
+                </button>
               </div>
 
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={editData.folga}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      folga: e.target.checked,
-                      falta: e.target.checked ? false : editData.falta,
-                      ferias: e.target.checked ? false : editData.ferias,
-                    })
-                  }
-                />
-                <span className="slider slider-folga"></span>
-              </label>
-
-              <span
-                className={editData.folga ? "switch-status folga" : "switch-status nao"}
-              >
-                {editData.folga ? "Sim" : "Não"}
-              </span>
+              {editData.falta_justificada && (
+                <label className="justificativa-label">
+                  Justificativa da falta:
+                  <textarea
+                    className="justificativa-textarea"
+                    placeholder="Digite a justificativa da falta..."
+                    value={editData.justificativa_falta}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        justificativa_falta: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              )}
             </div>
 
-            <div className="falta-toggle-box ferias-box">
-              <div className="falta-toggle-info">
-                <span className="falta-label">Férias</span>
-                <small>
-                  Se marcar <strong>Sim</strong>, o dia ficará como{" "}
-                  <strong>férias</strong>, com <strong>saldo zerado</strong> e
-                  destaque em roxo.
-                </small>
+            <div className="secao-horarios-dia">
+              <div className="secao-acoes-header">
+                <h4>Horários do dia</h4>
+                <p>
+                  Edite os horários manualmente quando o dia não estiver marcado
+                  como falta, folga, férias ou falta justificada.
+                </p>
               </div>
 
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={editData.ferias}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      ferias: e.target.checked,
-                      falta: e.target.checked ? false : editData.falta,
-                      folga: e.target.checked ? false : editData.folga,
-                    })
-                  }
-                />
-                <span className="slider slider-ferias"></span>
-              </label>
-
-              <span
-                className={editData.ferias ? "switch-status ferias" : "switch-status nao"}
+              <div
+                className={`modalGrid ${
+                  camposBloqueados ? "campos-desabilitados" : ""
+                }`}
               >
-                {editData.ferias ? "Sim" : "Não"}
-              </span>
-            </div>
+                <label>
+                  Entrada:
+                  <input
+                    type="time"
+                    value={editData.entrada}
+                    disabled={camposBloqueados}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        entrada: e.target.value,
+                      })
+                    }
+                  />
+                </label>
 
-            <div
-              className={`modalGrid ${
-                editData.falta || editData.folga || editData.ferias
-                  ? "campos-desabilitados"
-                  : ""
-              }`}
-            >
-              <label>
-                Entrada:
-                <input
-                  type="time"
-                  value={editData.entrada}
-                  disabled={editData.falta || editData.folga || editData.ferias}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      entrada: e.target.value,
-                    })
-                  }
-                />
-              </label>
+                <label>
+                  Início Intervalo:
+                  <input
+                    type="time"
+                    value={editData.intervalo_inicio}
+                    disabled={camposBloqueados}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        intervalo_inicio: e.target.value,
+                      })
+                    }
+                  />
+                </label>
 
-              <label>
-                Início Intervalo:
-                <input
-                  type="time"
-                  value={editData.intervalo_inicio}
-                  disabled={editData.falta || editData.folga || editData.ferias}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      intervalo_inicio: e.target.value,
-                    })
-                  }
-                />
-              </label>
+                <label>
+                  Retorno Intervalo:
+                  <input
+                    type="time"
+                    value={editData.intervalo_fim}
+                    disabled={camposBloqueados}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        intervalo_fim: e.target.value,
+                      })
+                    }
+                  />
+                </label>
 
-              <label>
-                Retorno Intervalo:
-                <input
-                  type="time"
-                  value={editData.intervalo_fim}
-                  disabled={editData.falta || editData.folga || editData.ferias}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      intervalo_fim: e.target.value,
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                Saída Final:
-                <input
-                  type="time"
-                  value={editData.saida}
-                  disabled={editData.falta || editData.folga || editData.ferias}
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      saida: e.target.value,
-                    })
-                  }
-                />
-              </label>
+                <label>
+                  Saída Final:
+                  <input
+                    type="time"
+                    value={editData.saida}
+                    disabled={camposBloqueados}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        saida: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="modalActions">

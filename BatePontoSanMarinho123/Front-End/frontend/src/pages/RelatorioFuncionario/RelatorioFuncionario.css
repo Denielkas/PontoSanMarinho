@@ -132,6 +132,23 @@
   font-weight: 700;
 }
 
+.linha-falta-justificada {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.linha-falta-justificada:hover {
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+.linha-falta-justificada td {
+  border-top: 1px solid rgba(239, 68, 68, 0.24);
+}
+
+.linha-falta-justificada td:first-child {
+  color: #fca5a5;
+  font-weight: 700;
+}
+
 .linha-folga {
   background: rgba(59, 130, 246, 0.1);
 }
@@ -146,6 +163,23 @@
 
 .linha-folga td:first-child {
   color: #60a5fa;
+  font-weight: 700;
+}
+
+.linha-feriado {
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.linha-feriado:hover {
+  background: rgba(14, 165, 233, 0.16) !important;
+}
+
+.linha-feriado td {
+  border-top: 1px solid rgba(14, 165, 233, 0.24);
+}
+
+.linha-feriado td:first-child {
+  color: #7dd3fc;
   font-weight: 700;
 }
 
@@ -175,7 +209,9 @@
 .badge-falta-nao,
 .badge-folga,
 .badge-atestado,
-.badge-ferias {
+.badge-ferias,
+.badge-falta-justificada,
+.badge-feriado {
   display: inline-block;
   padding: 5px 10px;
   border-radius: 999px;
@@ -195,10 +231,22 @@
   border: 1px solid rgba(46, 204, 113, 0.35);
 }
 
+.badge-falta-justificada {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
 .badge-folga {
   background: rgba(59, 130, 246, 0.15);
   color: #93c5fd;
   border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.badge-feriado {
+  background: rgba(14, 165, 233, 0.18);
+  color: #7dd3fc;
+  border: 1px solid rgba(14, 165, 233, 0.45);
 }
 
 .badge-atestado {
@@ -257,12 +305,6 @@
   font-weight: 700;
 }
 
-@media (max-width: 768px) {
-  .relatorio-filtros {
-    flex-direction: column;
-  }
-}
-
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -284,12 +326,173 @@
   box-shadow: 0 0 22px rgba(0, 0, 0, 0.55);
 }
 
+.modalCardRelatorio {
+  width: min(860px, 96vw);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
 .modalCard h3 {
   text-align: center;
   font-size: 22px;
   margin-bottom: 18px;
   color: #0d6efd;
   font-weight: 700;
+}
+
+.secao-acoes-dia,
+.secao-horarios-dia {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.secao-acoes-header {
+  margin-bottom: 14px;
+}
+
+.secao-acoes-header h4 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+.secao-acoes-header p {
+  margin: 0;
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.acoes-dia-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.acao-dia-card {
+  min-height: 112px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.acao-dia-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.acao-dia-card strong {
+  font-size: 15px;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.acao-dia-card small {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+.acao-dia-card span {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.falta-card.ativo {
+  border-color: rgba(231, 76, 60, 0.65);
+  background: rgba(231, 76, 60, 0.16);
+}
+
+.folga-card.ativo {
+  border-color: rgba(59, 130, 246, 0.65);
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.ferias-card.ativo {
+  border-color: rgba(139, 92, 246, 0.65);
+  background: rgba(139, 92, 246, 0.18);
+}
+
+.falta-justificada-card.ativo {
+  border-color: rgba(239, 68, 68, 0.65);
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.feriado-card.ativo {
+  border-color: rgba(14, 165, 233, 0.65);
+  background: rgba(14, 165, 233, 0.16);
+}
+
+.falta-card.ativo span {
+  background: rgba(231, 76, 60, 0.25);
+  color: #ffb4b4;
+}
+
+.folga-card.ativo span {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+}
+
+.ferias-card.ativo span {
+  background: rgba(139, 92, 246, 0.28);
+  color: #d8b4fe;
+}
+
+.falta-justificada-card.ativo span {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.feriado-card.ativo span {
+  background: rgba(14, 165, 233, 0.25);
+  color: #7dd3fc;
+}
+
+.justificativa-label {
+  display: block;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.justificativa-textarea {
+  width: 100%;
+  min-height: 86px;
+  resize: vertical;
+  margin-top: 8px;
+  padding: 12px;
+  background: #262626;
+  border: 2px solid #333;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.justificativa-textarea:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.35);
 }
 
 .modalGrid {
@@ -332,134 +535,16 @@
   opacity: 0.85;
 }
 
-.falta-toggle-box {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 14px;
-  border-radius: 12px;
-  margin-bottom: 18px;
-}
-
-.folga-box {
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  background: rgba(59, 130, 246, 0.06);
-}
-
-.ferias-box {
-  border: 1px solid rgba(139, 92, 246, 0.28);
-  background: rgba(139, 92, 246, 0.08);
-}
-
-.falta-toggle-info {
-  flex: 1;
-}
-
-.falta-label {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.falta-toggle-info small {
-  color: #cbd5e1;
-  line-height: 1.4;
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 32px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  inset: 0;
-  cursor: pointer;
-  background-color: #475569;
-  transition: 0.3s;
-  border-radius: 999px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 24px;
-  width: 24px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-.switch input:checked + .slider {
-  background-color: #e74c3c;
-}
-
-.switch input:checked + .slider:before {
-  transform: translateX(28px);
-}
-
-.slider-folga {
-  background-color: #475569;
-}
-
-.switch input:checked + .slider-folga {
-  background-color: #3b82f6;
-}
-
-.slider-ferias {
-  background-color: #475569;
-}
-
-.switch input:checked + .slider-ferias {
-  background-color: #8b5cf6;
-}
-
-.switch-status {
-  min-width: 42px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.switch-status.sim {
-  color: #ff8f8f;
-}
-
-.switch-status.nao {
-  color: #8ff0b0;
-}
-
-.switch-status.folga {
-  color: #93c5fd;
-}
-
-.switch-status.ferias {
-  color: #c084fc;
-}
-
 .modalActions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 20px;
+  flex-wrap: wrap;
 }
 
 .modalActions button {
-  padding: 8px 16px;
+  padding: 9px 16px;
   font-size: 14px;
   border-radius: 8px;
   border: none;
@@ -467,6 +552,15 @@
 }
 
 .modalActions button:first-child {
+  background: #dc2626;
+  color: #fff;
+}
+
+.modalActions button:first-child:hover {
+  background: #b91c1c;
+}
+
+.modalActions button:nth-child(2) {
   background: #3a3a3a;
   color: #eee;
 }
@@ -479,6 +573,11 @@
 
 .modalActions button:last-child:hover {
   background: #0b57d1;
+}
+
+.modalActions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .modalPdf {
@@ -572,24 +671,6 @@
   font-weight: 600;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0.6);
-  }
-  to {
-    transform: scale(1);
-  }
-}
-
 .acoes-cell {
   display: flex;
   align-items: center;
@@ -644,4 +725,56 @@
 
 .btn-limpar:hover {
   background: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .acoes-dia-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modalCardRelatorio {
+    width: 96vw;
+  }
+}
+
+@media (max-width: 768px) {
+  .relatorio-filtros {
+    flex-direction: column;
+  }
+
+  .modalGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .acoes-dia-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.6);
+  }
+
+  to {
+    transform: scale(1);
+  }
 }

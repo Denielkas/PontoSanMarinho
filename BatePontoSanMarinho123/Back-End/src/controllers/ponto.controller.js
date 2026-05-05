@@ -32,24 +32,20 @@ async function garantirTabelaFuncionarios() {
     );
   `);
 
-  try {
-    await pool.query(`
-      ALTER TABLE funcionarios
-      ADD COLUMN IF NOT EXISTS funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL
-    `);
+  await pool.query(`
+    ALTER TABLE funcionarios
+    ADD COLUMN IF NOT EXISTS funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL
+  `);
 
-    await pool.query(`
-      ALTER TABLE funcionarios
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
-    `);
+  await pool.query(`
+    ALTER TABLE funcionarios
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+  `);
 
-    await pool.query(`
-      ALTER TABLE funcionarios
-      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
-    `);
-  } catch (err) {
-    console.log("Colunas da tabela funcionarios já existem ou não foi necessário alterar.");
-  }
+  await pool.query(`
+    ALTER TABLE funcionarios
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+  `);
 }
 
 /* =========================================
@@ -79,35 +75,49 @@ async function garantirTabelaFaltas() {
       falta BOOLEAN NOT NULL DEFAULT false,
       folga BOOLEAN NOT NULL DEFAULT false,
       ferias BOOLEAN NOT NULL DEFAULT false,
+      falta_justificada BOOLEAN NOT NULL DEFAULT false,
+      justificativa_falta TEXT,
+      feriado BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW(),
       UNIQUE (funcionario_id, data)
     );
   `);
 
-  try {
-    await pool.query(`
-      ALTER TABLE faltas_ajustes
-      ADD COLUMN IF NOT EXISTS folga BOOLEAN NOT NULL DEFAULT false
-    `);
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS folga BOOLEAN NOT NULL DEFAULT false
+  `);
 
-    await pool.query(`
-      ALTER TABLE faltas_ajustes
-      ADD COLUMN IF NOT EXISTS ferias BOOLEAN NOT NULL DEFAULT false
-    `);
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS ferias BOOLEAN NOT NULL DEFAULT false
+  `);
 
-    await pool.query(`
-      ALTER TABLE faltas_ajustes
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
-    `);
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS falta_justificada BOOLEAN NOT NULL DEFAULT false
+  `);
 
-    await pool.query(`
-      ALTER TABLE faltas_ajustes
-      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
-    `);
-  } catch (err) {
-    console.log("Colunas da tabela faltas_ajustes já existem ou não foi necessário alterar.");
-  }
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS justificativa_falta TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS feriado BOOLEAN NOT NULL DEFAULT false
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+  `);
 }
 
 /* =========================================
@@ -166,7 +176,10 @@ function montarDataHora(dataBR, hora) {
   const [d, m, a] = String(dataBR).split("/");
   if (!d || !m || !a) return null;
 
-  return `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")} ${hora}:00`;
+  return `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(
+    2,
+    "0"
+  )} ${hora}:00`;
 }
 
 function dataBRparaISO(dataBR) {
@@ -205,12 +218,6 @@ async function buscarPontosHoje(funcionario_id) {
   return rows;
 }
 
-/* 
-   CORREÇÃO PRINCIPAL:
-   Busca o turno aberto nas últimas 36 horas.
-   Assim, se o funcionário entrou 17:30 e saiu 05:30 no outro dia,
-   o sistema ainda entende que o turno está aberto.
-*/
 async function buscarBatidasTurnoAberto(funcionario_id) {
   const { rows } = await pool.query(
     `
@@ -235,7 +242,6 @@ async function buscarBatidasTurnoAberto(funcionario_id) {
   }
 
   const abertas = rows.slice(indiceUltimaSaida + 1);
-
   const temEntradaAberta = abertas.some((p) => p.tipo === "entrada");
 
   if (!temEntradaAberta) return [];
@@ -245,9 +251,7 @@ async function buscarBatidasTurnoAberto(funcionario_id) {
 
 async function buscarUltimaBatidaAberta(funcionario_id) {
   const abertas = await buscarBatidasTurnoAberto(funcionario_id);
-
   if (!abertas.length) return null;
-
   return abertas[abertas.length - 1];
 }
 
@@ -339,7 +343,6 @@ exports.auto = async (req, res) => {
 
     const ultimaBatidaAberta = await buscarUltimaBatidaAberta(funcionario_id);
     const ultimaBatida = ultimaBatidaAberta ? ultimaBatidaAberta.tipo : null;
-
     const permissoes = getPermissoesPorUltimaBatida(ultimaBatida);
 
     let tipo = null;
@@ -401,7 +404,6 @@ exports.bater = async (req, res) => {
 
     const ultimaBatidaAberta = await buscarUltimaBatidaAberta(funcionario_id);
     const ultimaBatida = ultimaBatidaAberta ? ultimaBatidaAberta.tipo : null;
-
     const permissoes = getPermissoesPorUltimaBatida(ultimaBatida);
 
     if (!permissoes[tipo]) {
@@ -490,6 +492,9 @@ exports.ajustar = async (req, res) => {
       falta = false,
       folga = false,
       ferias = false,
+      falta_justificada = false,
+      justificativa_falta = "",
+      feriado = false,
     } = req.body;
 
     if (!funcionario_id || !data) {
@@ -504,6 +509,12 @@ exports.ajustar = async (req, res) => {
       return res.status(400).json({ error: "Data inválida" });
     }
 
+    const faltaBool = !!falta;
+    const folgaBool = !!folga;
+    const feriasBool = !!ferias;
+    const faltaJustificadaBool = !!falta_justificada;
+    const feriadoBool = !!feriado;
+
     const {
       entrada_id,
       intervalo_inicio_id,
@@ -513,19 +524,41 @@ exports.ajustar = async (req, res) => {
 
     await client.query(
       `
-      INSERT INTO faltas_ajustes (funcionario_id, data, falta, folga, ferias, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW())
+      INSERT INTO faltas_ajustes (
+        funcionario_id,
+        data,
+        falta,
+        folga,
+        ferias,
+        falta_justificada,
+        justificativa_falta,
+        feriado,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       ON CONFLICT (funcionario_id, data)
       DO UPDATE SET
         falta = EXCLUDED.falta,
         folga = EXCLUDED.folga,
         ferias = EXCLUDED.ferias,
+        falta_justificada = EXCLUDED.falta_justificada,
+        justificativa_falta = EXCLUDED.justificativa_falta,
+        feriado = EXCLUDED.feriado,
         updated_at = NOW()
       `,
-      [funcionario_id, dataISO, !!falta, !!folga, !!ferias]
+      [
+        funcionario_id,
+        dataISO,
+        faltaBool,
+        folgaBool,
+        feriasBool,
+        faltaJustificadaBool,
+        faltaJustificadaBool ? String(justificativa_falta || "").trim() : null,
+        feriadoBool,
+      ]
     );
 
-    if (falta === true || folga === true || ferias === true) {
+    if (faltaBool || folgaBool || feriasBool || faltaJustificadaBool) {
       await client.query(
         `
         DELETE FROM pontos
@@ -539,15 +572,22 @@ exports.ajustar = async (req, res) => {
 
       return res.json({
         ok: true,
-        falta: !!falta,
-        folga: !!folga,
-        ferias: !!ferias,
+        falta: faltaBool,
+        folga: folgaBool,
+        ferias: feriasBool,
+        falta_justificada: faltaJustificadaBool,
+        justificativa_falta: faltaJustificadaBool
+          ? String(justificativa_falta || "").trim()
+          : "",
+        feriado: feriadoBool,
         ids_originais: {},
-        message: falta
+        message: faltaBool
           ? "Falta registrada com sucesso."
-          : folga
+          : folgaBool
           ? "Folga registrada com sucesso."
-          : "Férias registrada com sucesso.",
+          : feriasBool
+          ? "Férias registrada com sucesso."
+          : "Falta justificada registrada com sucesso.",
       });
     }
 
@@ -616,11 +656,14 @@ exports.ajustar = async (req, res) => {
       SET falta = false,
           folga = false,
           ferias = false,
+          falta_justificada = false,
+          justificativa_falta = null,
+          feriado = $3,
           updated_at = NOW()
       WHERE funcionario_id = $1
         AND data = $2
       `,
-      [funcionario_id, dataISO]
+      [funcionario_id, dataISO, feriadoBool]
     );
 
     await client.query("COMMIT");
@@ -630,6 +673,9 @@ exports.ajustar = async (req, res) => {
       falta: false,
       folga: false,
       ferias: false,
+      falta_justificada: false,
+      justificativa_falta: "",
+      feriado: feriadoBool,
       ids_originais: novosIds,
       message: "Horários ajustados com sucesso.",
     });
@@ -749,7 +795,9 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
     const detalhes = [];
 
     for (let dia = 1; dia <= diasNoMes; dia++) {
-      const dataISO = `${anoNum}-${String(mesNum).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+      const dataISO = `${anoNum}-${String(mesNum).padStart(2, "0")}-${String(
+        dia
+      ).padStart(2, "0")}`;
 
       const { rows: pontosExistentes } = await client.query(
         `
@@ -774,7 +822,7 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
 
       const { rows: ajusteExistente } = await client.query(
         `
-        SELECT id, falta, folga, ferias
+        SELECT id, falta, folga, ferias, falta_justificada
         FROM faltas_ajustes
         WHERE funcionario_id = $1
           AND data = $2::date
@@ -787,7 +835,8 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
         ajusteExistente.length > 0 &&
         (ajusteExistente[0].falta ||
           ajusteExistente[0].folga ||
-          ajusteExistente[0].ferias)
+          ajusteExistente[0].ferias ||
+          ajusteExistente[0].falta_justificada)
       ) {
         diasIgnorados++;
         detalhes.push({
@@ -797,7 +846,9 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
             ? "Dia marcado como falta"
             : ajusteExistente[0].folga
             ? "Dia marcado como folga"
-            : "Dia marcado como férias",
+            : ajusteExistente[0].ferias
+            ? "Dia marcado como férias"
+            : "Dia marcado como falta justificada",
         });
         continue;
       }
@@ -843,13 +894,25 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
 
       await client.query(
         `
-        INSERT INTO faltas_ajustes (funcionario_id, data, falta, folga, ferias, updated_at)
-        VALUES ($1, $2::date, false, false, false, NOW())
+        INSERT INTO faltas_ajustes (
+          funcionario_id,
+          data,
+          falta,
+          folga,
+          ferias,
+          falta_justificada,
+          justificativa_falta,
+          feriado,
+          updated_at
+        )
+        VALUES ($1, $2::date, false, false, false, false, null, false, NOW())
         ON CONFLICT (funcionario_id, data)
         DO UPDATE SET
           falta = false,
           folga = false,
           ferias = false,
+          falta_justificada = false,
+          justificativa_falta = null,
           updated_at = NOW()
         `,
         [funcionario_id, dataISO]

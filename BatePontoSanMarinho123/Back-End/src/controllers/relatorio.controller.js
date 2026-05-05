@@ -1,9 +1,6 @@
 const pool = require("../database/pool");
 const { calcularDia, formatarSaldo } = require("../utils/calculos");
 
-/* =========================================
-   GARANTE TABELA FUNCOES
-========================================= */
 async function garantirTabelaFuncoes() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS funcoes (
@@ -14,9 +11,6 @@ async function garantirTabelaFuncoes() {
   `);
 }
 
-/* =========================================
-   GARANTE TABELA FUNCIONARIOS
-========================================= */
 async function garantirTabelaFuncionarios() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS funcionarios (
@@ -33,29 +27,22 @@ async function garantirTabelaFuncionarios() {
     );
   `);
 
-  try {
-    await pool.query(`
-      ALTER TABLE funcionarios
-      ADD COLUMN IF NOT EXISTS funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL
-    `);
+  await pool.query(`
+    ALTER TABLE funcionarios
+    ADD COLUMN IF NOT EXISTS funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL
+  `);
 
-    await pool.query(`
-      ALTER TABLE funcionarios
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
-    `);
+  await pool.query(`
+    ALTER TABLE funcionarios
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+  `);
 
-    await pool.query(`
-      ALTER TABLE funcionarios
-      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
-    `);
-  } catch (err) {
-    console.log("Colunas da tabela funcionarios já existem ou não foi necessário alterar.");
-  }
+  await pool.query(`
+    ALTER TABLE funcionarios
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+  `);
 }
 
-/* =========================================
-   GARANTE TABELA PONTOS
-========================================= */
 async function garantirTabelaPontos() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pontos (
@@ -68,9 +55,6 @@ async function garantirTabelaPontos() {
   `);
 }
 
-/* =========================================
-   GARANTE TABELA FALTAS_AJUSTES
-========================================= */
 async function garantirTabelaFaltas() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS faltas_ajustes (
@@ -80,30 +64,51 @@ async function garantirTabelaFaltas() {
       falta BOOLEAN NOT NULL DEFAULT false,
       folga BOOLEAN NOT NULL DEFAULT false,
       ferias BOOLEAN NOT NULL DEFAULT false,
+      falta_justificada BOOLEAN NOT NULL DEFAULT false,
+      justificativa_falta TEXT,
+      feriado BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW(),
       UNIQUE (funcionario_id, data)
     );
   `);
 
-  try {
-    await pool.query(`
-      ALTER TABLE faltas_ajustes
-      ADD COLUMN IF NOT EXISTS folga BOOLEAN NOT NULL DEFAULT false
-    `);
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS folga BOOLEAN NOT NULL DEFAULT false
+  `);
 
-    await pool.query(`
-      ALTER TABLE faltas_ajustes
-      ADD COLUMN IF NOT EXISTS ferias BOOLEAN NOT NULL DEFAULT false
-    `);
-  } catch (err) {
-    console.log("Colunas já existem ou não foi necessário alterar.");
-  }
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS ferias BOOLEAN NOT NULL DEFAULT false
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS falta_justificada BOOLEAN NOT NULL DEFAULT false
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS justificativa_falta TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS feriado BOOLEAN NOT NULL DEFAULT false
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+  `);
+
+  await pool.query(`
+    ALTER TABLE faltas_ajustes
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
+  `);
 }
 
-/* =========================================
-   GARANTE TABELA ATESTADOS
-========================================= */
 async function garantirTabelaAtestados() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS atestados (
@@ -117,9 +122,6 @@ async function garantirTabelaAtestados() {
   `);
 }
 
-/* =========================================
-   GARANTE TUDO NECESSÁRIO
-========================================= */
 async function garantirTabelas() {
   await garantirTabelaFuncoes();
   await garantirTabelaFuncionarios();
@@ -192,7 +194,14 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
 
   const faltasQuery = await pool.query(
     `
-    SELECT data, falta, folga, ferias
+    SELECT 
+      data,
+      falta,
+      folga,
+      ferias,
+      falta_justificada,
+      justificativa_falta,
+      feriado
     FROM faltas_ajustes
     WHERE funcionario_id = $1
       AND EXTRACT(MONTH FROM data) = $2
@@ -202,16 +211,23 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
   );
 
   const mapaAjustes = {};
+
   for (const item of faltasQuery.rows) {
     const d = new Date(item.data);
     d.setHours(0, 0, 0, 0);
 
-    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getDate()).padStart(2, "0")}`;
 
     mapaAjustes[chave] = {
       falta: !!item.falta,
       folga: !!item.folga,
       ferias: !!item.ferias,
+      falta_justificada: !!item.falta_justificada,
+      justificativa_falta: item.justificativa_falta || "",
+      feriado: !!item.feriado,
     };
   }
 
@@ -246,15 +262,45 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
 
   function formatarChaveDia(data) {
     const d = zerarHora(data);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
   function formatarHora(data) {
-    if (!data) return "--:--";
+    if (!data) return "";
+
     return new Date(data).toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function linhaBaseResposta(dataAtual, extras = {}) {
+    return {
+      funcionario_id: funcionario.id,
+      data: dataAtual.toLocaleDateString("pt-BR"),
+      nome: funcionario.nome,
+      cpf: funcionario.cpf,
+      entrada: "",
+      intervalo_inicio: "",
+      intervalo_fim: "",
+      saida: "",
+      total_horas: "",
+      saldo_bruto: 0,
+      atraso_total: formatarSaldo(0),
+      atestado: false,
+      arquivo_atestado: null,
+      falta: false,
+      folga: false,
+      ferias: false,
+      falta_justificada: false,
+      justificativa_falta: "",
+      feriado: false,
+      ids_originais: {},
+      ...extras,
+    };
   }
 
   function criarLinhaBase(row) {
@@ -354,6 +400,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
 
   function removerItemPorId(lista, idRemover) {
     const idx = lista.findIndex((item) => item.id === idRemover);
+
     if (idx >= 0) {
       lista.splice(idx, 1);
     }
@@ -457,6 +504,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
     while (autos.length > 0) {
       const linha = criarLinhaBase(lista[0]);
       const a1 = autos.shift();
+
       adicionarCampo(linha, "entrada", a1);
 
       if (autos.length > 0) {
@@ -505,11 +553,16 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
       falta: false,
       folga: false,
       ferias: false,
+      falta_justificada: false,
+      justificativa_falta: "",
+      feriado: false,
     };
 
     const faltaDoDia = !!ajusteDia.falta;
     const folgaDoDia = !!ajusteDia.folga;
     const feriasDoDia = !!ajusteDia.ferias;
+    const faltaJustificadaDoDia = !!ajusteDia.falta_justificada;
+    const feriadoDoDia = !!ajusteDia.feriado;
     const atestadoDoDia = !!arquivoAtestado;
 
     if (faltaDoDia) {
@@ -527,73 +580,52 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
         falta: true,
       });
 
-      final.push({
-        funcionario_id: funcionario.id,
-        data: dataAtual.toLocaleDateString("pt-BR"),
-        nome: funcionario.nome,
-        cpf: funcionario.cpf,
-        entrada: calculadoFalta.entrada || "--:--",
-        intervalo_inicio: calculadoFalta.intervalo_inicio || "--:--",
-        intervalo_fim: calculadoFalta.intervalo_fim || "--:--",
-        saida: calculadoFalta.saida || "--:--",
-        total_horas: "--",
-        saldo_bruto: Number(calculadoFalta.saldo_bruto) || 0,
-        atraso_total: formatarSaldo(Number(calculadoFalta.saldo_bruto) || 0),
-        atestado: false,
-        arquivo_atestado: null,
-        falta: true,
-        folga: false,
-        ferias: false,
-        ids_originais: {},
-      });
+      final.push(
+        linhaBaseResposta(dataAtual, {
+          entrada: calculadoFalta.entrada || "",
+          intervalo_inicio: calculadoFalta.intervalo_inicio || "",
+          intervalo_fim: calculadoFalta.intervalo_fim || "",
+          saida: calculadoFalta.saida || "",
+          saldo_bruto: Number(calculadoFalta.saldo_bruto) || 0,
+          atraso_total: formatarSaldo(Number(calculadoFalta.saldo_bruto) || 0),
+          falta: true,
+          feriado: feriadoDoDia,
+        })
+      );
+
+      continue;
+    }
+
+    if (faltaJustificadaDoDia) {
+      final.push(
+        linhaBaseResposta(dataAtual, {
+          falta_justificada: true,
+          justificativa_falta: ajusteDia.justificativa_falta || "",
+          feriado: feriadoDoDia,
+        })
+      );
 
       continue;
     }
 
     if (folgaDoDia) {
-      final.push({
-        funcionario_id: funcionario.id,
-        data: dataAtual.toLocaleDateString("pt-BR"),
-        nome: funcionario.nome,
-        cpf: funcionario.cpf,
-        entrada: "--:--",
-        intervalo_inicio: "--:--",
-        intervalo_fim: "--:--",
-        saida: "--:--",
-        total_horas: "--",
-        saldo_bruto: 0,
-        atraso_total: formatarSaldo(0),
-        atestado: false,
-        arquivo_atestado: null,
-        falta: false,
-        folga: true,
-        ferias: false,
-        ids_originais: {},
-      });
+      final.push(
+        linhaBaseResposta(dataAtual, {
+          folga: true,
+          feriado: feriadoDoDia,
+        })
+      );
 
       continue;
     }
 
     if (feriasDoDia) {
-      final.push({
-        funcionario_id: funcionario.id,
-        data: dataAtual.toLocaleDateString("pt-BR"),
-        nome: funcionario.nome,
-        cpf: funcionario.cpf,
-        entrada: "--:--",
-        intervalo_inicio: "--:--",
-        intervalo_fim: "--:--",
-        saida: "--:--",
-        total_horas: "--",
-        saldo_bruto: 0,
-        atraso_total: formatarSaldo(0),
-        atestado: false,
-        arquivo_atestado: null,
-        falta: false,
-        folga: false,
-        ferias: true,
-        ids_originais: {},
-      });
+      final.push(
+        linhaBaseResposta(dataAtual, {
+          ferias: true,
+          feriado: feriadoDoDia,
+        })
+      );
 
       continue;
     }
@@ -624,7 +656,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
           intervalo_inicio: formatarHora(turno.intervalo_inicio),
           intervalo_fim: formatarHora(turno.intervalo_fim),
           saida: formatarHora(turno.saida),
-          total_horas: "--",
+          total_horas: "",
           saldo_bruto: 0,
         };
 
@@ -657,16 +689,16 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
             intervalo_fim:
               calculado.intervalo_fim || formatarHora(turno.intervalo_fim),
             saida: calculado.saida || formatarHora(turno.saida),
-            total_horas: calculado.total_horas || "--",
+            total_horas: calculado.total_horas || "",
             saldo_bruto: Number(calculado.saldo_bruto) || 0,
           };
         } else if (ehLinhaSoDeIntervalo) {
           result = {
-            entrada: "--:--",
+            entrada: "",
             intervalo_inicio: formatarHora(turno.intervalo_inicio),
             intervalo_fim: formatarHora(turno.intervalo_fim),
-            saida: "--:--",
-            total_horas: "--",
+            saida: "",
+            total_horas: "",
             saldo_bruto: 0,
           };
         }
@@ -676,11 +708,11 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
           data: dataAtual.toLocaleDateString("pt-BR"),
           nome: turno.nome || funcionario.nome,
           cpf: turno.cpf || funcionario.cpf,
-          entrada: result.entrada || "--:--",
-          intervalo_inicio: result.intervalo_inicio || "--:--",
-          intervalo_fim: result.intervalo_fim || "--:--",
-          saida: result.saida || "--:--",
-          total_horas: result.total_horas || "--",
+          entrada: result.entrada || "",
+          intervalo_inicio: result.intervalo_inicio || "",
+          intervalo_fim: result.intervalo_fim || "",
+          saida: result.saida || "",
+          total_horas: result.total_horas || "",
           saldo_bruto: Number(result.saldo_bruto) || 0,
           atraso_total: formatarSaldo(Number(result.saldo_bruto) || 0),
           atestado: atestadoDoDia,
@@ -688,29 +720,20 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
           falta: false,
           folga: false,
           ferias: false,
+          falta_justificada: false,
+          justificativa_falta: "",
+          feriado: feriadoDoDia,
           ids_originais: turno.ids_originais || {},
         });
       });
     } else {
-      final.push({
-        funcionario_id: funcionario.id,
-        data: dataAtual.toLocaleDateString("pt-BR"),
-        nome: funcionario.nome,
-        cpf: funcionario.cpf,
-        entrada: "--:--",
-        intervalo_inicio: "--:--",
-        intervalo_fim: "--:--",
-        saida: "--:--",
-        total_horas: "--",
-        saldo_bruto: 0,
-        atraso_total: formatarSaldo(0),
-        atestado: atestadoDoDia,
-        arquivo_atestado: arquivoAtestado || null,
-        falta: false,
-        folga: false,
-        ferias: false,
-        ids_originais: {},
-      });
+      final.push(
+        linhaBaseResposta(dataAtual, {
+          atestado: atestadoDoDia,
+          arquivo_atestado: arquivoAtestado || null,
+          feriado: feriadoDoDia,
+        })
+      );
     }
   }
 

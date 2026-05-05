@@ -14,12 +14,17 @@ const {
 
 function somarSaldo(registros = []) {
   return registros.reduce((acc, item) => {
-    if (item.folga || item.atestado || item.ferias) return acc;
+    if (
+      item.folga ||
+      item.atestado ||
+      item.ferias ||
+      item.falta_justificada
+    ) {
+      return acc;
+    }
 
     const saldo = Number(item.saldo_bruto) || 0;
 
-    // positivos de até 15 minutos aparecem na linha,
-    // mas NÃO entram no saldo acumulado
     if (saldo > 0 && saldo <= 15) return acc;
 
     return acc + saldo;
@@ -51,6 +56,7 @@ function nomeMes(mes) {
     "Novembro",
     "Dezembro",
   ];
+
   return meses[Number(mes)] || String(mes);
 }
 
@@ -58,315 +64,311 @@ function formatarPeriodoBonito(mes, ano) {
   return `${nomeMes(mes)}/${ano}`;
 }
 
-function formatarTexto(valor, fallback = "-") {
-  if (valor === null || valor === undefined || valor === "") {
-    return fallback;
-  }
-  return String(valor);
-}
-
-function textoStatus(item) {
-  if (item.falta) return "Falta";
-  if (item.folga) return "Folga";
-  if (item.atestado) return "Atestado";
-  if (item.ferias) return "Férias";
-  return "Normal";
-}
-
-function textoSaldo(item) {
-  if (item.folga || item.atestado || item.ferias) return "+0h 0m";
-  return formatarSaldoMinutos(Number(item.saldo_bruto) || 0);
-}
-
-function corLinhaHex(item, indice) {
-  if (item.folga) return "EAF3FF";
-  if (item.falta) return "FDECEC";
-  if (item.atestado) return "FFF4E5";
-  if (item.ferias) return "E8FCEB";
-  if (indice % 2 === 0) return "F3F3F3";
-  return null;
-}
-
-// REMOVE ":" DAS HORAS SOMENTE NO EXCEL
-function formatarHoraExcel(valor, fallback = "--") {
-  if (valor === null || valor === undefined || valor === "") {
-    return fallback;
-  }
+function limparTexto(valor, fallback = "-") {
+  if (valor === null || valor === undefined || valor === "") return fallback;
 
   const texto = String(valor).trim();
 
-  if (texto === "--:--") return "--";
-  if (texto === "--") return "--";
+  if (texto === "--:--" || texto === "--") return fallback;
+
+  return texto;
+}
+
+function textoStatus(item) {
+  if (item.falta) return "FALTA";
+  if (item.falta_justificada) return "FALTA JUSTIFICADA";
+  if (item.feriado) return "FERIADO";
+  if (item.folga) return "FOLGA";
+  if (item.atestado) return "ATESTADO";
+  if (item.ferias) return "FÉRIAS";
+  return "-";
+}
+
+function textoSaldo(item) {
+  if (
+    item.folga ||
+    item.atestado ||
+    item.ferias ||
+    item.falta_justificada
+  ) {
+    return "+0h 0m";
+  }
+
+  return formatarSaldoMinutos(Number(item.saldo_bruto) || 0);
+}
+
+function corStatus(item) {
+  if (item.falta) return "FF0000";
+  if (item.falta_justificada) return "C00000";
+  if (item.feriado) return "FF0000";
+  if (item.folga) return "0070C0";
+  if (item.atestado) return "C65911";
+  if (item.ferias) return "7030A0";
+  return "0070C0";
+}
+
+function corFundoStatus(item) {
+  if (item.falta) return "FFFFFF";
+  if (item.falta_justificada) return "F4CCCC";
+  if (item.feriado) return "B4C7E7";
+  if (item.folga) return "D9EAF7";
+  if (item.atestado) return "FCE4D6";
+  if (item.ferias) return "E4DFEC";
+  return "EDEDED";
+}
+
+function getNomeDiaSemanaPorDataBR(dataBR) {
+  if (!dataBR) return "-";
+
+  const partes = String(dataBR).split("/");
+  if (partes.length !== 3) return "-";
+
+  const dia = Number(partes[0]);
+  const mes = Number(partes[1]);
+  const ano = Number(partes[2]);
+
+  if (!dia || !mes || !ano) return "-";
+
+  const data = new Date(ano, mes - 1, dia);
+
+  const dias = [
+    "Domingo",
+    "Segunda",
+    "Terça",
+    "Quarta",
+    "Quinta",
+    "Sexta",
+    "Sábado",
+  ];
+
+  return dias[data.getDay()] || "-";
+}
+
+function dataBRParaDate(dataBR) {
+  if (!dataBR) return null;
+
+  const partes = String(dataBR).split("/");
+  if (partes.length !== 3) return null;
+
+  const dia = Number(partes[0]);
+  const mes = Number(partes[1]);
+  const ano = Number(partes[2]);
+
+  if (!dia || !mes || !ano) return null;
+
+  return new Date(ano, mes - 1, dia);
+}
+
+function horaParaExcelSemDoisPontos(valor) {
+  const texto = limparTexto(valor, "");
+
+  if (!texto) return "-";
 
   return texto.replace(/:/g, "");
 }
 
-/* =========================================================
-   PDF
-========================================================= */
+function minutosParaHoraExcel(valor) {
+  const texto = limparTexto(valor, "");
 
-function criarCabecalhoFuncionario(doc, funcionario, mes, ano, saldoTexto) {
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(22)
-    .text("SM MARINHO LTDA    CNPJ 52.830.136/0001-22", 20, 20, {
-      align: "center",
-      width: 790,
-    });
+  if (!texto) return "-";
 
-  doc.moveDown(1.2);
-
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(18)
-    .text("Relatório de Frequência", 20, doc.y, {
-      align: "left",
-    });
-
-  doc.moveDown(0.8);
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(11)
-    .text(`Nome: ${formatarTexto(funcionario.nome)}`);
-  doc
-    .font("Helvetica")
-    .fontSize(10)
-    .text(`CPF: ${formatarTexto(funcionario.cpf)}`);
-  doc.text(`Período: ${formatarPeriodoBonito(mes, ano)}`);
-  doc.text(`Saldo acumulado: ${saldoTexto}`);
-
-  doc.moveDown(0.6);
-  doc.moveTo(20, doc.y).lineTo(810, doc.y).stroke();
-  doc.moveDown(0.8);
+  return texto.replace(/:/g, "");
 }
 
-function desenharHeaderTabela(doc, y) {
-  const colunas = {
+function temHorario(item) {
+  return !!(
+    limparTexto(item.entrada, "") ||
+    limparTexto(item.intervalo_inicio, "") ||
+    limparTexto(item.intervalo_fim, "") ||
+    limparTexto(item.saida, "")
+  );
+}
+
+function getPrimeiroNomeFuncionario(dados, funcionario) {
+  return funcionario?.nome || dados?.[0]?.nome || "Funcionário";
+}
+
+/* =========================================================
+   PDF NO MODELO NOVO
+========================================================= */
+
+function pdfHeader(doc, funcionario, mes, ano, saldoTexto) {
+  doc.font("Helvetica-Bold").fontSize(20).fillColor("black");
+  doc.text("SM MARINHO LTDA", 20, 25, {
+    width: 800,
+    align: "center",
+  });
+
+  doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
+  doc.text(`PERÍODO: ${formatarPeriodoBonito(mes, ano)}`, 20, 52, {
+    width: 800,
+    align: "center",
+  });
+
+  doc.moveTo(20, 75).lineTo(820, 75).stroke();
+
+  doc.font("Helvetica-Bold").fontSize(9);
+  doc.text("Funcionário", 25, 84, { width: 130, align: "center" });
+
+  doc.rect(20, 80, 140, 20).stroke();
+  doc.rect(160, 80, 320, 20).stroke();
+
+  doc.font("Helvetica-Bold").fontSize(9);
+  doc.text(getPrimeiroNomeFuncionario([], funcionario), 165, 84, {
+    width: 310,
+    align: "left",
+  });
+
+  doc.rect(485, 80, 335, 20).stroke();
+  doc.text(`H.E. / Atrasos / A.N.     ${saldoTexto}`, 490, 84, {
+    width: 320,
+    align: "center",
+  });
+}
+
+function pdfTableHeader(doc, y) {
+  const cols = {
     data: 20,
-    entrada: 105,
-    intervalo: 180,
-    retorno: 265,
-    saida: 350,
-    total: 435,
-    saldo: 520,
-    status: 640,
+    dia: 85,
+    entrada1: 160,
+    saida1: 235,
+    entrada2: 310,
+    saida2: 385,
+    diaria: 470,
+    atrasos: 550,
+    extras: 635,
+    an: 730,
   };
 
   doc.save();
-  doc.rect(20, y - 3, 790, 22).fill("#2F80C0");
+  doc.rect(20, y, 800, 22).fill("#D9D9D9");
   doc.restore();
 
-  doc.fillColor("white").font("Helvetica-Bold").fontSize(9);
-  doc.text("Data", colunas.data, y);
-  doc.text("Entrada", colunas.entrada, y);
-  doc.text("Intervalo", colunas.intervalo, y);
-  doc.text("Retorno", colunas.retorno, y);
-  doc.text("Saída", colunas.saida, y);
-  doc.text("Total", colunas.total, y);
-  doc.text("Saldo", colunas.saldo, y);
-  doc.text("Status", colunas.status, y);
+  doc.font("Helvetica-Bold").fontSize(8).fillColor("black");
 
-  doc.fillColor("black");
-  return y + 24;
+  doc.text("Data", cols.data, y + 6, { width: 60, align: "center" });
+  doc.text("Dia Semana", cols.dia, y + 6, { width: 70, align: "center" });
+  doc.text("Entrada", cols.entrada1, y + 6, { width: 70, align: "center" });
+  doc.text("Saída", cols.saida1, y + 6, { width: 70, align: "center" });
+  doc.text("Entrada", cols.entrada2, y + 6, { width: 70, align: "center" });
+  doc.text("Saída", cols.saida2, y + 6, { width: 70, align: "center" });
+  doc.text("H. Diária", cols.diaria, y + 6, { width: 70, align: "center" });
+  doc.text("Atrasos", cols.atrasos, y + 6, { width: 75, align: "center" });
+  doc.text("Horas Extras", cols.extras, y + 6, { width: 85, align: "center" });
+  doc.text("A.N.", cols.an, y + 6, { width: 85, align: "center" });
+
+  doc.rect(20, y, 800, 22).stroke();
+
+  return y + 22;
 }
 
-function desenharLinhaTabela(doc, item, y, indice) {
-  const colunas = {
+function pdfLinha(doc, item, y, indice) {
+  const cols = {
     data: 20,
-    entrada: 105,
-    intervalo: 180,
-    retorno: 265,
-    saida: 350,
-    total: 435,
-    saldo: 520,
-    status: 640,
+    dia: 85,
+    entrada1: 160,
+    saida1: 235,
+    entrada2: 310,
+    saida2: 385,
+    diaria: 470,
+    atrasos: 550,
+    extras: 635,
+    an: 730,
   };
 
-  let corFundo = null;
-  let corTextoData = "black";
+  const altura = 19;
+  const fundo = indice % 2 === 0 ? "#F2F2F2" : "#FFFFFF";
 
-  if (item.folga) {
-    corFundo = "#EAF3FF";
-    corTextoData = "#2563EB";
-  } else if (item.falta) {
-    corFundo = "#FDECEC";
-    corTextoData = "#DC2626";
-  } else if (item.atestado) {
-    corFundo = "#FFF4E5";
-    corTextoData = "#D97706";
-  } else if (item.ferias) {
-    corFundo = "#E8FCEB";
-    corTextoData = "#16A34A";
-  } else if (indice % 2 === 0) {
-    corFundo = "#F3F3F3";
+  doc.save();
+  doc.rect(20, y, 800, altura).fill(fundo);
+  doc.restore();
+
+  doc.font("Helvetica").fontSize(8).fillColor("black");
+
+  const diaSemana = getNomeDiaSemanaPorDataBR(item.data);
+
+  const entrada1 = horaParaExcelSemDoisPontos(item.entrada);
+  const saida1 = horaParaExcelSemDoisPontos(item.intervalo_inicio);
+  const entrada2 = horaParaExcelSemDoisPontos(item.intervalo_fim);
+  const saida2 = horaParaExcelSemDoisPontos(item.saida);
+
+  const total = minutosParaHoraExcel(item.total_horas);
+
+  let atraso = "-";
+  let extra = "-";
+
+  const saldo = Number(item.saldo_bruto) || 0;
+
+  if (
+    !item.folga &&
+    !item.atestado &&
+    !item.ferias &&
+    !item.falta_justificada &&
+    temHorario(item)
+  ) {
+    if (saldo < 0) atraso = formatarSaldoMinutos(saldo).replace("-", "");
+    if (saldo > 15) extra = formatarSaldoMinutos(saldo).replace("+", "");
   }
 
-  if (corFundo) {
-    doc.save();
-    doc.rect(20, y - 2, 790, 20).fill(corFundo);
-    doc.restore();
-  }
+  const status = textoStatus(item);
 
-  const saldoLinha =
-    item.folga || item.atestado || item.ferias
-      ? "+0h 0m"
-      : formatarSaldoMinutos(Number(item.saldo_bruto) || 0);
-
-  let statusTexto = "Normal";
-  let corStatus = "#16A34A";
-
-  if (item.falta) {
-    statusTexto = "Falta";
-    corStatus = "#DC2626";
-  } else if (item.folga) {
-    statusTexto = "Folga";
-    corStatus = "#2563EB";
-  } else if (item.atestado) {
-    statusTexto = "Atestado";
-    corStatus = "#D97706";
-  } else if (item.ferias) {
-    statusTexto = "Férias";
-    corStatus = "#16A34A";
-  }
-
-  let corSaldo = "#16A34A";
-  if (item.atestado) {
-    corSaldo = "#D97706";
-  } else if (item.folga) {
-    corSaldo = "#2563EB";
-  } else if (item.ferias) {
-    corSaldo = "#16A34A";
-  } else if (Number(item.saldo_bruto) < 0) {
-    corSaldo = "#DC2626";
-  }
-
-  doc.font("Helvetica").fontSize(9);
-
-  doc.fillColor(corTextoData);
-  doc.text(formatarTexto(item.data, "--"), colunas.data, y, { width: 75 });
-
-  doc.fillColor("black");
-  doc.text(formatarTexto(item.entrada, "--:--"), colunas.entrada, y, {
+  doc.text(limparTexto(item.data, "-"), cols.data, y + 5, {
     width: 60,
+    align: "center",
   });
-  doc.text(formatarTexto(item.intervalo_inicio, "--:--"), colunas.intervalo, y, {
-    width: 65,
-  });
-  doc.text(formatarTexto(item.intervalo_fim, "--:--"), colunas.retorno, y, {
-    width: 65,
-  });
-  doc.text(formatarTexto(item.saida, "--:--"), colunas.saida, y, { width: 60 });
-  doc.text(formatarTexto(item.total_horas, "--"), colunas.total, y, { width: 70 });
 
-  doc.fillColor(corSaldo).font("Helvetica-Bold");
-  doc.text(saldoLinha, colunas.saldo, y, { width: 90 });
+  doc.font(diaSemana === "Sábado" || diaSemana === "Domingo" ? "Helvetica-Bold" : "Helvetica");
+  doc.text(diaSemana, cols.dia, y + 5, { width: 70, align: "center" });
 
-  doc.fillColor(corStatus).font("Helvetica-Bold");
-  doc.text(statusTexto, colunas.status, y, { width: 100 });
+  doc.font("Helvetica").fillColor("black");
+  doc.text(entrada1, cols.entrada1, y + 5, { width: 70, align: "center" });
+  doc.text(saida1, cols.saida1, y + 5, { width: 70, align: "center" });
+  doc.text(entrada2, cols.entrada2, y + 5, { width: 70, align: "center" });
+  doc.text(saida2, cols.saida2, y + 5, { width: 70, align: "center" });
+
+  doc.text(total, cols.diaria, y + 5, { width: 70, align: "center" });
+
+  doc.fillColor("#FF0000");
+  doc.text(atraso, cols.atrasos, y + 5, { width: 75, align: "center" });
+
+  doc.fillColor("#0070C0");
+  doc.text(extra, cols.extras, y + 5, { width: 85, align: "center" });
+
+  doc.fillColor(`#${corStatus(item)}`).font("Helvetica-Bold");
+  doc.text(status, cols.an, y + 5, { width: 85, align: "center" });
 
   doc.fillColor("black").font("Helvetica");
 
-  return y + 20;
+  doc.rect(20, y, 800, altura).stroke();
+
+  return y + altura;
 }
 
-function desenharLegenda(doc) {
-  let y = doc.y + 6;
+function desenharTabelaFuncionario(doc, funcionario, dados, mes, ano) {
+  const saldoTextoFuncionario = formatarSaldoMinutos(somarSaldo(dados));
 
-  if (y > 500) {
-    doc.addPage({
-      size: "A4",
-      layout: "landscape",
-      margin: 20,
-    });
-    y = 50;
+  pdfHeader(doc, funcionario, mes, ano, saldoTextoFuncionario);
+
+  let y = 112;
+  y = pdfTableHeader(doc, y);
+
+  for (let i = 0; i < dados.length; i++) {
+    if (y > 535) {
+      doc.addPage({
+        size: "A4",
+        layout: "landscape",
+        margin: 20,
+      });
+
+      pdfHeader(doc, funcionario, mes, ano, saldoTextoFuncionario);
+      y = 112;
+      y = pdfTableHeader(doc, y);
+    }
+
+    y = pdfLinha(doc, dados[i], y, i);
   }
 
-  doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
-  doc.text("Legenda:", 20, y);
-
-  y += 16;
-
-  doc.save();
-  doc.rect(20, y, 14, 10).fill("#FDECEC");
-  doc.restore();
-  doc.font("Helvetica").fontSize(9).fillColor("black");
-  doc.text("Falta", 40, y - 1);
-
-  doc.save();
-  doc.rect(100, y, 14, 10).fill("#EAF3FF");
-  doc.restore();
-  doc.text("Folga", 120, y - 1);
-
-  doc.save();
-  doc.rect(180, y, 14, 10).fill("#FFF4E5");
-  doc.restore();
-  doc.text("Atestado", 200, y - 1);
-
-  doc.save();
-  doc.rect(280, y, 14, 10).fill("#E8FCEB");
-  doc.restore();
-  doc.text("Férias", 300, y - 1);
-
-  doc.y = y + 16;
-}
-
-function desenharObservacoes(doc, mes, saldoTexto) {
-  let y = doc.y + 8;
-
-  if (y > 500) {
-    doc.addPage({
-      size: "A4",
-      layout: "landscape",
-      margin: 20,
-    });
-    y = 60;
-  }
-
-  const x = 20;
-  const largura = 790;
-  const altura = 58;
-
-  doc.save();
-  doc.rect(x, y, largura, altura).stroke();
-  doc.restore();
-
-  doc.font("Helvetica").fontSize(11).fillColor("black");
-
-  doc.text(
-    `OBSERVAÇÕES: Horas Extras mês ${Number(mes)} = ${saldoTexto}, ajustada ao banco de horas.`,
-    x + 8,
-    y + 6,
-    {
-      width: largura - 16,
-      align: "left",
-    }
-  );
-
-  doc.text(
-    "As horas positivas/negativas serão pagas ou descontadas no prazo de 60 dias.",
-    x + 8,
-    y + 24,
-    {
-      width: largura - 16,
-      align: "left",
-    }
-  );
-
-  doc.text(
-    "Dias com falta, folga, atestado e férias aparecem na coluna Status do relatório.",
-    x + 8,
-    y + 40,
-    {
-      width: largura - 16,
-      align: "left",
-    }
-  );
-
-  doc.y = y + altura + 4;
-}
-
-function desenharCampoAssinatura(doc, funcionario) {
-  let y = doc.y + 12;
+  y += 14;
 
   if (y > 520) {
     doc.addPage({
@@ -377,261 +379,290 @@ function desenharCampoAssinatura(doc, funcionario) {
     y = 80;
   }
 
-  const largura = 260;
-  const x = 280;
+  doc.font("Helvetica").fontSize(9).fillColor("black");
 
-  doc.moveTo(x, y).lineTo(x + largura, y).stroke();
+  doc.rect(20, y, 800, 50).stroke();
+  doc.text(
+    `OBSERVAÇÕES: Horas Extras mês ${Number(mes)} = ${saldoTextoFuncionario}, ajustada ao banco de horas.`,
+    28,
+    y + 8,
+    { width: 780 }
+  );
 
-  doc
-    .font("Helvetica")
-    .fontSize(10)
-    .text(formatarTexto(funcionario.nome, ""), x, y + 4, {
-      width: largura,
-      align: "center",
-    });
+  doc.text(
+    "As horas positivas/negativas serão pagas ou descontadas no prazo de 60 dias.",
+    28,
+    y + 25,
+    { width: 780 }
+  );
 
-  doc.text("Assinatura do funcionário", x, y + 18, {
-    width: largura,
+  y += 80;
+
+  doc.moveTo(295, y).lineTo(545, y).stroke();
+
+  doc.font("Helvetica").fontSize(9);
+  doc.text(funcionario.nome || "", 295, y + 5, {
+    width: 250,
     align: "center",
   });
 
-  doc.y = y + 35;
-}
-
-function desenharTabelaFuncionario(doc, funcionario, dados, mes, ano) {
-  const saldoTextoFuncionario = formatarSaldoMinutos(somarSaldo(dados));
-
-  criarCabecalhoFuncionario(doc, funcionario, mes, ano, saldoTextoFuncionario);
-
-  let y = doc.y;
-  y = desenharHeaderTabela(doc, y);
-
-  for (let i = 0; i < dados.length; i++) {
-    if (y > 520) {
-      doc.addPage({
-        size: "A4",
-        layout: "landscape",
-        margin: 20,
-      });
-
-      y = 30;
-      y = desenharHeaderTabela(doc, y);
-    }
-
-    y = desenharLinhaTabela(doc, dados[i], y, i);
-  }
-
-  doc.y = y + 8;
-  desenharLegenda(doc);
-  desenharObservacoes(doc, mes, saldoTextoFuncionario);
-  desenharCampoAssinatura(doc, funcionario);
-}
-
-/* =========================================================
-   EXCEL
-========================================================= */
-
-function aplicarBordaLinha(row) {
-  row.eachCell((cell) => {
-    cell.border = {
-      top: { style: "thin", color: { argb: "D9D9D9" } },
-      left: { style: "thin", color: { argb: "D9D9D9" } },
-      bottom: { style: "thin", color: { argb: "D9D9D9" } },
-      right: { style: "thin", color: { argb: "D9D9D9" } },
-    };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
+  doc.text("Assinatura do funcionário", 295, y + 20, {
+    width: 250,
+    align: "center",
   });
 }
 
-function estilizarCabecalhoPlanilha(ws, funcionario, mes, ano, saldoTexto) {
-  ws.mergeCells("A1:H1");
-  ws.getCell("A1").value = "SM MARINHO LTDA    CNPJ 52.830.136/0001-22";
-  ws.getCell("A1").font = { bold: true, size: 16 };
-  ws.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+/* =========================================================
+   EXCEL NO MODELO DA IMAGEM
+========================================================= */
 
-  ws.mergeCells("A3:H3");
-  ws.getCell("A3").value = "Relatório de Frequência";
-  ws.getCell("A3").font = { bold: true, size: 14 };
+function aplicarBorda(cell, color = "BFBFBF") {
+  cell.border = {
+    top: { style: "thin", color: { argb: color } },
+    left: { style: "thin", color: { argb: color } },
+    bottom: { style: "thin", color: { argb: color } },
+    right: { style: "thin", color: { argb: color } },
+  };
+}
 
-  ws.getCell("A5").value = `Nome: ${formatarTexto(funcionario.nome)}`;
-  ws.getCell("A6").value = `CPF: ${formatarTexto(funcionario.cpf)}`;
-  ws.getCell("A7").value = `Período: ${formatarPeriodoBonito(mes, ano)}`;
-  ws.getCell("A8").value = `Saldo acumulado: ${saldoTexto}`;
+function aplicarBordaLinha(row, maxCol = 10) {
+  for (let i = 1; i <= maxCol; i++) {
+    aplicarBorda(row.getCell(i));
+    row.getCell(i).alignment = {
+      vertical: "middle",
+      horizontal: "center",
+    };
+  }
+}
 
-  ws.getColumn("A").width = 15;
-  ws.getColumn("B").width = 14;
-  ws.getColumn("C").width = 14;
-  ws.getColumn("D").width = 14;
-  ws.getColumn("E").width = 14;
-  ws.getColumn("F").width = 14;
-  ws.getColumn("G").width = 14;
-  ws.getColumn("H").width = 16;
+function formulaDiaSemanaExcel(rowNumber) {
+  return `IF(A${rowNumber}="","",CHOOSE(WEEKDAY(A${rowNumber},1),"Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"))`;
 }
 
 function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   const saldoTextoFuncionario = formatarSaldoMinutos(somarSaldo(dados));
 
-  estilizarCabecalhoPlanilha(ws, funcionario, mes, ano, saldoTextoFuncionario);
+  ws.pageSetup = {
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    paperSize: 9,
+    margins: {
+      left: 0.25,
+      right: 0.25,
+      top: 0.25,
+      bottom: 0.25,
+      header: 0.1,
+      footer: 0.1,
+    },
+  };
 
-  const headerRowIndex = 10;
-  const headerRow = ws.getRow(headerRowIndex);
+  ws.views = [{ state: "frozen", ySplit: 4 }];
 
-  headerRow.values = [
+  ws.mergeCells("A1:J1");
+  ws.getCell("A1").value = "SM MARINHO LTDA";
+  ws.getCell("A1").font = { bold: true, size: 18, color: { argb: "000000" } };
+  ws.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(1).height = 30;
+
+  ws.getCell("A3").value = "Funcionário";
+  ws.getCell("A3").font = { bold: true };
+  ws.getCell("A3").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "D9D9D9" },
+  };
+
+  ws.mergeCells("B3:F3");
+  ws.getCell("B3").value = funcionario.nome || "";
+  ws.getCell("B3").font = { bold: true };
+  ws.getCell("B3").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF2CC" },
+  };
+
+  ws.mergeCells("G3:J3");
+  ws.getCell("G3").value = `H.E. / Atrasos / A.N.    ${formatarPeriodoBonito(mes, ano)}`;
+  ws.getCell("G3").font = { bold: true };
+  ws.getCell("G3").alignment = { horizontal: "center", vertical: "middle" };
+  ws.getCell("G3").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "D9D9D9" },
+  };
+
+  for (let c = 1; c <= 10; c++) {
+    aplicarBorda(ws.getRow(3).getCell(c));
+  }
+
+  const headerIndex = 4;
+  const header = ws.getRow(headerIndex);
+
+  header.values = [
     "Data",
+    "Dia Semana",
     "Entrada",
-    "Intervalo",
-    "Retorno",
     "Saída",
-    "Total",
-    "Saldo",
-    "Status",
+    "Entrada",
+    "Saída",
+    "H. Diária",
+    "Atrasos",
+    "Horas Extras",
+    "A.N.",
   ];
 
-  headerRow.height = 22;
+  header.height = 22;
 
-  headerRow.eachCell((cell) => {
-    cell.font = { bold: true, color: { argb: "FFFFFF" } };
+  for (let c = 1; c <= 10; c++) {
+    const cell = header.getCell(c);
+    cell.font = { bold: true, color: { argb: "000000" } };
     cell.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: "2F80C0" },
+      fgColor: { argb: "D9D9D9" },
     };
     cell.alignment = { horizontal: "center", vertical: "middle" };
-    cell.border = {
-      top: { style: "thin", color: { argb: "FFFFFF" } },
-      left: { style: "thin", color: { argb: "FFFFFF" } },
-      bottom: { style: "thin", color: { argb: "FFFFFF" } },
-      right: { style: "thin", color: { argb: "FFFFFF" } },
-    };
-  });
+    aplicarBorda(cell);
+  }
 
-  let rowIndex = headerRowIndex + 1;
+  ws.getColumn("A").width = 12;
+  ws.getColumn("B").width = 14;
+  ws.getColumn("C").width = 12;
+  ws.getColumn("D").width = 12;
+  ws.getColumn("E").width = 12;
+  ws.getColumn("F").width = 12;
+  ws.getColumn("G").width = 12;
+  ws.getColumn("H").width = 12;
+  ws.getColumn("I").width = 14;
+  ws.getColumn("J").width = 14;
+
+  let rowIndex = 5;
 
   dados.forEach((item, indice) => {
-    const status = textoStatus(item);
-    const saldo = textoSaldo(item);
-    const fundo = corLinhaHex(item, indice);
-
     const row = ws.getRow(rowIndex);
-    row.values = [
-      formatarTexto(item.data, "--"),
-      formatarHoraExcel(item.entrada, "--"),
-      formatarHoraExcel(item.intervalo_inicio, "--"),
-      formatarHoraExcel(item.intervalo_fim, "--"),
-      formatarHoraExcel(item.saida, "--"),
-      formatarHoraExcel(item.total_horas, "--"),
-      saldo,
-      status,
-    ];
+    const dataExcel = dataBRParaDate(item.data);
+
+    const saldo = Number(item.saldo_bruto) || 0;
+
+    let atraso = "-";
+    let extra = "-";
+
+    if (
+      !item.folga &&
+      !item.atestado &&
+      !item.ferias &&
+      !item.falta_justificada &&
+      temHorario(item)
+    ) {
+      if (saldo < 0) atraso = formatarSaldoMinutos(saldo).replace("-", "");
+      if (saldo > 15) extra = formatarSaldoMinutos(saldo).replace("+", "");
+    }
+
+    row.getCell(1).value = dataExcel || limparTexto(item.data, "-");
+    if (dataExcel) {
+      row.getCell(1).numFmt = "dd/mm/yy";
+    }
+
+    row.getCell(2).value = {
+      formula: formulaDiaSemanaExcel(rowIndex),
+      result: getNomeDiaSemanaPorDataBR(item.data),
+    };
+
+    row.getCell(3).value = horaParaExcelSemDoisPontos(item.entrada);
+    row.getCell(4).value = horaParaExcelSemDoisPontos(item.intervalo_inicio);
+    row.getCell(5).value = horaParaExcelSemDoisPontos(item.intervalo_fim);
+    row.getCell(6).value = horaParaExcelSemDoisPontos(item.saida);
+    row.getCell(7).value = minutosParaHoraExcel(item.total_horas);
+    row.getCell(8).value = atraso;
+    row.getCell(9).value = extra;
+    row.getCell(10).value = textoStatus(item);
 
     row.height = 20;
 
-    row.eachCell((cell, colNumber) => {
-      cell.font = { size: 10 };
+    for (let c = 1; c <= 10; c++) {
+      const cell = row.getCell(c);
 
-      if (fundo) {
+      cell.font = { size: 10 };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      aplicarBorda(cell);
+
+      if (c >= 3 && c <= 6) {
         cell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: fundo },
+          fgColor: { argb: "FFF2CC" },
+        };
+      } else if (c >= 7 && c <= 10) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "EDEDED" },
+        };
+      } else if (indice % 2 === 0) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "F2F2F2" },
         };
       }
+    }
 
-      if (colNumber === 7) {
-        if (item.atestado) {
-          cell.font = { bold: true, color: { argb: "D97706" } };
-        } else if (item.folga) {
-          cell.font = { bold: true, color: { argb: "2563EB" } };
-        } else if (item.ferias) {
-          cell.font = { bold: true, color: { argb: "16A34A" } };
-        } else if (Number(item.saldo_bruto) < 0) {
-          cell.font = { bold: true, color: { argb: "DC2626" } };
-        } else {
-          cell.font = { bold: true, color: { argb: "16A34A" } };
-        }
-      }
+    const diaSemana = getNomeDiaSemanaPorDataBR(item.data);
 
-      if (colNumber === 8) {
-        let cor = "16A34A";
-        if (item.falta) cor = "DC2626";
-        if (item.folga) cor = "2563EB";
-        if (item.atestado) cor = "D97706";
-        if (item.ferias) cor = "16A34A";
+    if (diaSemana === "Sábado" || diaSemana === "Domingo") {
+      row.getCell(2).font = { bold: true, color: { argb: "000000" } };
+    }
 
-        cell.font = { bold: true, color: { argb: cor } };
-      }
+    row.getCell(8).font = { bold: true, color: { argb: "FF0000" } };
+    row.getCell(9).font = { bold: true, color: { argb: "0070C0" } };
 
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-    });
+    row.getCell(10).font = {
+      bold: true,
+      color: { argb: corStatus(item) },
+    };
 
-    aplicarBordaLinha(row);
+    row.getCell(10).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: corFundoStatus(item) },
+    };
+
     rowIndex++;
   });
 
-  rowIndex += 1;
-  ws.getCell(`A${rowIndex}`).value = "Legenda:";
-  ws.getCell(`A${rowIndex}`).font = { bold: true };
-
-  rowIndex++;
-  ws.getCell(`A${rowIndex}`).value = "Falta";
-  ws.getCell(`A${rowIndex}`).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FDECEC" },
-  };
-
-  ws.getCell(`B${rowIndex}`).value = "Folga";
-  ws.getCell(`B${rowIndex}`).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "EAF3FF" },
-  };
-
-  ws.getCell(`C${rowIndex}`).value = "Atestado";
-  ws.getCell(`C${rowIndex}`).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFF4E5" },
-  };
-
-  ws.getCell(`D${rowIndex}`).value = "Férias";
-  ws.getCell(`D${rowIndex}`).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "E8FCEB" },
-  };
-
   rowIndex += 2;
-  ws.mergeCells(`A${rowIndex}:H${rowIndex}`);
+
+  ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
   ws.getCell(`A${rowIndex}`).value =
     `OBSERVAÇÕES: Horas Extras mês ${Number(mes)} = ${saldoTextoFuncionario}, ajustada ao banco de horas.`;
+  ws.getCell(`A${rowIndex}`).font = { bold: true };
+  ws.getCell(`A${rowIndex}`).alignment = { horizontal: "left" };
 
   rowIndex++;
-  ws.mergeCells(`A${rowIndex}:H${rowIndex}`);
+
+  ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
   ws.getCell(`A${rowIndex}`).value =
     "As horas positivas/negativas serão pagas ou descontadas no prazo de 60 dias.";
 
-  rowIndex++;
-  ws.mergeCells(`A${rowIndex}:H${rowIndex}`);
-  ws.getCell(`A${rowIndex}`).value =
-    "Dias com falta, folga, atestado e férias aparecem na coluna Status do relatório.";
-
   rowIndex += 3;
-  ws.mergeCells(`C${rowIndex}:F${rowIndex}`);
-  ws.getCell(`C${rowIndex}`).value = "________________________________________";
-  ws.getCell(`C${rowIndex}`).alignment = { horizontal: "center" };
+
+  ws.mergeCells(`D${rowIndex}:G${rowIndex}`);
+  ws.getCell(`D${rowIndex}`).value = "________________________________________";
+  ws.getCell(`D${rowIndex}`).alignment = { horizontal: "center" };
 
   rowIndex++;
-  ws.mergeCells(`C${rowIndex}:F${rowIndex}`);
-  ws.getCell(`C${rowIndex}`).value = formatarTexto(funcionario.nome, "");
-  ws.getCell(`C${rowIndex}`).alignment = { horizontal: "center" };
+
+  ws.mergeCells(`D${rowIndex}:G${rowIndex}`);
+  ws.getCell(`D${rowIndex}`).value = funcionario.nome || "";
+  ws.getCell(`D${rowIndex}`).alignment = { horizontal: "center" };
 
   rowIndex++;
-  ws.mergeCells(`C${rowIndex}:F${rowIndex}`);
-  ws.getCell(`C${rowIndex}`).value = "Assinatura do funcionário";
-  ws.getCell(`C${rowIndex}`).alignment = { horizontal: "center" };
 
-  ws.views = [{ state: "frozen", ySplit: 10 }];
+  ws.mergeCells(`D${rowIndex}:G${rowIndex}`);
+  ws.getCell(`D${rowIndex}`).value = "Assinatura do funcionário";
+  ws.getCell(`D${rowIndex}`).alignment = { horizontal: "center" };
 }
 
 /* =========================================================
@@ -681,7 +712,7 @@ async function buscarDadosRelatorioFuncionario(funcionarioId, mes, ano) {
 }
 
 /* =========================================================
-   ROTAS PDF — SEM SALVAR NO DISCO
+   ROTAS PDF
 ========================================================= */
 
 router.get("/pdf/todos", async (req, res) => {
@@ -717,7 +748,7 @@ router.get("/pdf/todos", async (req, res) => {
     doc.pipe(res);
 
     let gerouAlgumFuncionario = false;
-    let primeiroFuncionarioComDados = true;
+    let primeiro = true;
 
     for (const funcionarioBase of funcionariosQuery.rows) {
       const funcionario = await buscarFuncionarioPorId(funcionarioBase.id);
@@ -731,7 +762,7 @@ router.get("/pdf/todos", async (req, res) => {
 
       if (!dadosFuncionario.length) continue;
 
-      if (!primeiroFuncionarioComDados) {
+      if (!primeiro) {
         doc.addPage({
           size: "A4",
           layout: "landscape",
@@ -741,8 +772,8 @@ router.get("/pdf/todos", async (req, res) => {
 
       desenharTabelaFuncionario(doc, funcionario, dadosFuncionario, mes, ano);
 
+      primeiro = false;
       gerouAlgumFuncionario = true;
-      primeiroFuncionarioComDados = false;
     }
 
     if (!gerouAlgumFuncionario) {
@@ -755,6 +786,7 @@ router.get("/pdf/todos", async (req, res) => {
     doc.end();
   } catch (err) {
     console.error("Erro ao gerar PDF de todos:", err);
+
     if (!res.headersSent) {
       return res.status(500).json({ error: "Erro ao gerar PDF de todos." });
     }
@@ -771,6 +803,7 @@ router.get("/pdf/:funcId", async (req, res) => {
     }
 
     const funcionario = await buscarFuncionarioPorId(funcId);
+
     if (!funcionario) {
       return res.status(404).json({ error: "Funcionário não encontrado." });
     }
@@ -804,6 +837,7 @@ router.get("/pdf/:funcId", async (req, res) => {
     doc.end();
   } catch (err) {
     console.error("Erro ao gerar PDF:", err);
+
     if (!res.headersSent) {
       return res.status(500).json({ error: "Erro ao gerar PDF." });
     }
@@ -811,7 +845,7 @@ router.get("/pdf/:funcId", async (req, res) => {
 });
 
 /* =========================================================
-   ROTAS EXCEL — SEM SALVAR NO DISCO
+   ROTAS EXCEL
 ========================================================= */
 
 router.get("/excel/todos", async (req, res) => {
@@ -852,7 +886,7 @@ router.get("/excel/todos", async (req, res) => {
 
       let nomeAba = String(funcionario.nome || `Func_${funcionario.id}`).trim();
       if (!nomeAba) nomeAba = `Func_${funcionario.id}`;
-      nomeAba = nomeAba.substring(0, 31);
+      nomeAba = nomeAba.replace(/[\\/*?:[\]]/g, "").substring(0, 31);
 
       const ws = workbook.addWorksheet(nomeAba);
       criarTabelaExcelFuncionario(ws, funcionario, dadosFuncionario, mes, ano);
@@ -862,13 +896,15 @@ router.get("/excel/todos", async (req, res) => {
 
     if (!gerouAlgumFuncionario) {
       const ws = workbook.addWorksheet("Relatório");
-      ws.getCell("A1").value = "Nenhum registro encontrado para o período informado.";
+      ws.getCell("A1").value =
+        "Nenhum registro encontrado para o período informado.";
     }
 
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
+
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="relatorio_todos_${mes}_${ano}.xlsx"`
@@ -878,6 +914,7 @@ router.get("/excel/todos", async (req, res) => {
     res.end();
   } catch (err) {
     console.error("Erro ao gerar Excel de todos:", err);
+
     if (!res.headersSent) {
       return res.status(500).json({ error: "Erro ao gerar Excel de todos." });
     }
@@ -894,6 +931,7 @@ router.get("/excel/:funcId", async (req, res) => {
     }
 
     const funcionario = await buscarFuncionarioPorId(funcId);
+
     if (!funcionario) {
       return res.status(404).json({ error: "Funcionário não encontrado." });
     }
@@ -919,6 +957,7 @@ router.get("/excel/:funcId", async (req, res) => {
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
+
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="relatorio_${funcId}_${mes}_${ano}.xlsx"`
@@ -928,6 +967,7 @@ router.get("/excel/:funcId", async (req, res) => {
     res.end();
   } catch (err) {
     console.error("Erro ao gerar Excel:", err);
+
     if (!res.headersSent) {
       return res.status(500).json({ error: "Erro ao gerar Excel." });
     }

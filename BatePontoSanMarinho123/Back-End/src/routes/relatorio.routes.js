@@ -84,19 +84,6 @@ function textoStatus(item) {
   return "-";
 }
 
-function textoSaldo(item) {
-  if (
-    item.folga ||
-    item.atestado ||
-    item.ferias ||
-    item.falta_justificada
-  ) {
-    return "+0h 0m";
-  }
-
-  return formatarSaldoMinutos(Number(item.saldo_bruto) || 0);
-}
-
 function corStatus(item) {
   if (item.falta) return "FF0000";
   if (item.falta_justificada) return "C00000";
@@ -159,15 +146,23 @@ function dataBRParaDate(dataBR) {
   return new Date(ano, mes - 1, dia);
 }
 
-function horaParaExcelSemDoisPontos(valor) {
+function horaParaNumeroExcel(valor) {
   const texto = limparTexto(valor, "");
 
-  if (!texto) return "-";
+  if (!texto) return "";
 
-  return texto.replace(/:/g, "");
+  const partes = texto.split(":");
+  if (partes.length < 2) return "";
+
+  const h = Number(partes[0]);
+  const m = Number(partes[1]);
+
+  if (Number.isNaN(h) || Number.isNaN(m)) return "";
+
+  return (h * 60 + m) / 1440;
 }
 
-function minutosParaHoraExcel(valor) {
+function horaParaTextoPDF(valor) {
   const texto = limparTexto(valor, "");
 
   if (!texto) return "-";
@@ -184,22 +179,36 @@ function temHorario(item) {
   );
 }
 
-function getPrimeiroNomeFuncionario(dados, funcionario) {
-  return funcionario?.nome || dados?.[0]?.nome || "Funcionário";
+function formulaDiaSemanaExcel(rowNumber) {
+  return `IF(A${rowNumber}="","",CHOOSE(WEEKDAY(A${rowNumber},1),"Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"))`;
+}
+
+function formulaHDia(rowNumber) {
+  return `IFERROR(IF(OR(D${rowNumber}="",D${rowNumber}=0),0,IF(TEXT(D${rowNumber},"[hh]:mm:ss")<TEXT(C${rowNumber},"[hh]:mm:ss"),(1-C${rowNumber}+D${rowNumber}),D${rowNumber}-C${rowNumber}))+IF(OR(F${rowNumber}="",F${rowNumber}=0),0,IF(TEXT(F${rowNumber},"[hh]:mm:ss")<TEXT(E${rowNumber},"[hh]:mm:ss"),(1-E${rowNumber}+F${rowNumber}),F${rowNumber}-E${rowNumber})),0)`;
+}
+
+function formulaAtraso(rowNumber) {
+  return `IF(A${rowNumber}="",0,IF(OR((VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber})<0,C${rowNumber}=""),0,(VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber})))`;
+}
+
+function formulaHoraExtra(rowNumber) {
+  return `IF(A${rowNumber}="",0,IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<0,0,(G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))))`;
 }
 
 /* =========================================================
-   PDF NO MODELO NOVO
+   PDF
 ========================================================= */
 
 function pdfHeader(doc, funcionario, mes, ano, saldoTexto) {
   doc.font("Helvetica-Bold").fontSize(20).fillColor("black");
+
   doc.text("SM MARINHO LTDA", 20, 25, {
     width: 800,
     align: "center",
   });
 
   doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
+
   doc.text(`PERÍODO: ${formatarPeriodoBonito(mes, ano)}`, 20, 52, {
     width: 800,
     align: "center",
@@ -208,13 +217,15 @@ function pdfHeader(doc, funcionario, mes, ano, saldoTexto) {
   doc.moveTo(20, 75).lineTo(820, 75).stroke();
 
   doc.font("Helvetica-Bold").fontSize(9);
-  doc.text("Funcionário", 25, 84, { width: 130, align: "center" });
 
   doc.rect(20, 80, 140, 20).stroke();
-  doc.rect(160, 80, 320, 20).stroke();
+  doc.text("Funcionário", 25, 84, {
+    width: 130,
+    align: "center",
+  });
 
-  doc.font("Helvetica-Bold").fontSize(9);
-  doc.text(getPrimeiroNomeFuncionario([], funcionario), 165, 84, {
+  doc.rect(160, 80, 320, 20).stroke();
+  doc.text(funcionario.nome || "", 165, 84, {
     width: 310,
     align: "left",
   });
@@ -254,7 +265,10 @@ function pdfTableHeader(doc, y) {
   doc.text("Saída", cols.saida2, y + 6, { width: 70, align: "center" });
   doc.text("H. Diária", cols.diaria, y + 6, { width: 70, align: "center" });
   doc.text("Atrasos", cols.atrasos, y + 6, { width: 75, align: "center" });
-  doc.text("Horas Extras", cols.extras, y + 6, { width: 85, align: "center" });
+  doc.text("Horas Extras", cols.extras, y + 6, {
+    width: 85,
+    align: "center",
+  });
   doc.text("A.N.", cols.an, y + 6, { width: 85, align: "center" });
 
   doc.rect(20, y, 800, 22).stroke();
@@ -287,12 +301,11 @@ function pdfLinha(doc, item, y, indice) {
 
   const diaSemana = getNomeDiaSemanaPorDataBR(item.data);
 
-  const entrada1 = horaParaExcelSemDoisPontos(item.entrada);
-  const saida1 = horaParaExcelSemDoisPontos(item.intervalo_inicio);
-  const entrada2 = horaParaExcelSemDoisPontos(item.intervalo_fim);
-  const saida2 = horaParaExcelSemDoisPontos(item.saida);
-
-  const total = minutosParaHoraExcel(item.total_horas);
+  const entrada1 = horaParaTextoPDF(item.entrada);
+  const saida1 = horaParaTextoPDF(item.intervalo_inicio);
+  const entrada2 = horaParaTextoPDF(item.intervalo_fim);
+  const saida2 = horaParaTextoPDF(item.saida);
+  const total = horaParaTextoPDF(item.total_horas);
 
   let atraso = "-";
   let extra = "-";
@@ -317,15 +330,23 @@ function pdfLinha(doc, item, y, indice) {
     align: "center",
   });
 
-  doc.font(diaSemana === "Sábado" || diaSemana === "Domingo" ? "Helvetica-Bold" : "Helvetica");
-  doc.text(diaSemana, cols.dia, y + 5, { width: 70, align: "center" });
+  doc.font(
+    diaSemana === "Sábado" || diaSemana === "Domingo"
+      ? "Helvetica-Bold"
+      : "Helvetica"
+  );
+
+  doc.text(diaSemana, cols.dia, y + 5, {
+    width: 70,
+    align: "center",
+  });
 
   doc.font("Helvetica").fillColor("black");
+
   doc.text(entrada1, cols.entrada1, y + 5, { width: 70, align: "center" });
   doc.text(saida1, cols.saida1, y + 5, { width: 70, align: "center" });
   doc.text(entrada2, cols.entrada2, y + 5, { width: 70, align: "center" });
   doc.text(saida2, cols.saida2, y + 5, { width: 70, align: "center" });
-
   doc.text(total, cols.diaria, y + 5, { width: 70, align: "center" });
 
   doc.fillColor("#FF0000");
@@ -376,14 +397,18 @@ function desenharTabelaFuncionario(doc, funcionario, dados, mes, ano) {
       layout: "landscape",
       margin: 20,
     });
+
     y = 80;
   }
 
   doc.font("Helvetica").fontSize(9).fillColor("black");
 
   doc.rect(20, y, 800, 50).stroke();
+
   doc.text(
-    `OBSERVAÇÕES: Horas Extras mês ${Number(mes)} = ${saldoTextoFuncionario}, ajustada ao banco de horas.`,
+    `OBSERVAÇÕES: Horas Extras mês ${Number(
+      mes
+    )} = ${saldoTextoFuncionario}, ajustada ao banco de horas.`,
     28,
     y + 8,
     { width: 780 }
@@ -401,6 +426,7 @@ function desenharTabelaFuncionario(doc, funcionario, dados, mes, ano) {
   doc.moveTo(295, y).lineTo(545, y).stroke();
 
   doc.font("Helvetica").fontSize(9);
+
   doc.text(funcionario.nome || "", 295, y + 5, {
     width: 250,
     align: "center",
@@ -413,7 +439,7 @@ function desenharTabelaFuncionario(doc, funcionario, dados, mes, ano) {
 }
 
 /* =========================================================
-   EXCEL NO MODELO DA IMAGEM
+   EXCEL
 ========================================================= */
 
 function aplicarBorda(cell, color = "BFBFBF") {
@@ -425,18 +451,70 @@ function aplicarBorda(cell, color = "BFBFBF") {
   };
 }
 
-function aplicarBordaLinha(row, maxCol = 10) {
-  for (let i = 1; i <= maxCol; i++) {
-    aplicarBorda(row.getCell(i));
-    row.getCell(i).alignment = {
-      vertical: "middle",
-      horizontal: "center",
-    };
-  }
-}
+function criarCargaHoraria(ws) {
+  ws.mergeCells("L3:M3");
 
-function formulaDiaSemanaExcel(rowNumber) {
-  return `IF(A${rowNumber}="","",CHOOSE(WEEKDAY(A${rowNumber},1),"Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"))`;
+  ws.getCell("L3").value = "CARGA HORÁRIA";
+  ws.getCell("L3").font = { bold: true };
+  ws.getCell("L3").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+  ws.getCell("L3").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "D9D9D9" },
+  };
+
+  aplicarBorda(ws.getCell("L3"));
+  aplicarBorda(ws.getCell("M3"));
+
+  const cargaHoraria = [
+    ["Segunda", "08:30"],
+    ["Terça", "08:30"],
+    ["Quarta", "08:30"],
+    ["Quinta", "08:30"],
+    ["Sexta", "08:30"],
+    ["Sábado", "08:30"],
+    ["Domingo", "08:30"],
+    ["FERIADOS", "08:30"],
+  ];
+
+  cargaHoraria.forEach((linha, index) => {
+    const r = 6 + index;
+
+    ws.getCell(`L${r}`).value = linha[0];
+    ws.getCell(`M${r}`).value = horaParaNumeroExcel(linha[1]);
+    ws.getCell(`M${r}`).numFmt = "[h]:mm";
+
+    ws.getCell(`L${r}`).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "EDEDED" },
+    };
+
+    ws.getCell(`M${r}`).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF2CC" },
+    };
+
+    ws.getCell(`L${r}`).alignment = {
+      horizontal: "left",
+      vertical: "middle",
+    };
+
+    ws.getCell(`M${r}`).alignment = {
+      horizontal: "center",
+      vertical: "middle",
+    };
+
+    aplicarBorda(ws.getCell(`L${r}`));
+    aplicarBorda(ws.getCell(`M${r}`));
+  });
+
+  ws.getColumn("L").width = 14;
+  ws.getColumn("M").width = 12;
 }
 
 function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
@@ -462,12 +540,23 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
 
   ws.mergeCells("A1:J1");
   ws.getCell("A1").value = "SM MARINHO LTDA";
-  ws.getCell("A1").font = { bold: true, size: 18, color: { argb: "000000" } };
-  ws.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+  ws.getCell("A1").font = {
+    bold: true,
+    size: 18,
+    color: { argb: "000000" },
+  };
+  ws.getCell("A1").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
   ws.getRow(1).height = 30;
 
   ws.getCell("A3").value = "Funcionário";
   ws.getCell("A3").font = { bold: true };
+  ws.getCell("A3").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
   ws.getCell("A3").fill = {
     type: "pattern",
     pattern: "solid",
@@ -484,9 +573,15 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   };
 
   ws.mergeCells("G3:J3");
-  ws.getCell("G3").value = `H.E. / Atrasos / A.N.    ${formatarPeriodoBonito(mes, ano)}`;
+  ws.getCell("G3").value = `H.E. / Atrasos / A.N.    ${formatarPeriodoBonito(
+    mes,
+    ano
+  )}`;
   ws.getCell("G3").font = { bold: true };
-  ws.getCell("G3").alignment = { horizontal: "center", vertical: "middle" };
+  ws.getCell("G3").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
   ws.getCell("G3").fill = {
     type: "pattern",
     pattern: "solid",
@@ -496,6 +591,8 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   for (let c = 1; c <= 10; c++) {
     aplicarBorda(ws.getRow(3).getCell(c));
   }
+
+  criarCargaHoraria(ws);
 
   const headerIndex = 4;
   const header = ws.getRow(headerIndex);
@@ -517,13 +614,18 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
 
   for (let c = 1; c <= 10; c++) {
     const cell = header.getCell(c);
+
     cell.font = { bold: true, color: { argb: "000000" } };
     cell.fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: "D9D9D9" },
     };
-    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+    };
+
     aplicarBorda(cell);
   }
 
@@ -544,23 +646,8 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     const row = ws.getRow(rowIndex);
     const dataExcel = dataBRParaDate(item.data);
 
-    const saldo = Number(item.saldo_bruto) || 0;
-
-    let atraso = "-";
-    let extra = "-";
-
-    if (
-      !item.folga &&
-      !item.atestado &&
-      !item.ferias &&
-      !item.falta_justificada &&
-      temHorario(item)
-    ) {
-      if (saldo < 0) atraso = formatarSaldoMinutos(saldo).replace("-", "");
-      if (saldo > 15) extra = formatarSaldoMinutos(saldo).replace("+", "");
-    }
-
     row.getCell(1).value = dataExcel || limparTexto(item.data, "-");
+
     if (dataExcel) {
       row.getCell(1).numFmt = "dd/mm/yy";
     }
@@ -570,13 +657,23 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
       result: getNomeDiaSemanaPorDataBR(item.data),
     };
 
-    row.getCell(3).value = horaParaExcelSemDoisPontos(item.entrada);
-    row.getCell(4).value = horaParaExcelSemDoisPontos(item.intervalo_inicio);
-    row.getCell(5).value = horaParaExcelSemDoisPontos(item.intervalo_fim);
-    row.getCell(6).value = horaParaExcelSemDoisPontos(item.saida);
-    row.getCell(7).value = minutosParaHoraExcel(item.total_horas);
-    row.getCell(8).value = atraso;
-    row.getCell(9).value = extra;
+    row.getCell(3).value = horaParaNumeroExcel(item.entrada);
+    row.getCell(4).value = horaParaNumeroExcel(item.intervalo_inicio);
+    row.getCell(5).value = horaParaNumeroExcel(item.intervalo_fim);
+    row.getCell(6).value = horaParaNumeroExcel(item.saida);
+
+    row.getCell(7).value = {
+      formula: formulaHDia(rowIndex),
+    };
+
+    row.getCell(8).value = {
+      formula: formulaAtraso(rowIndex),
+    };
+
+    row.getCell(9).value = {
+      formula: formulaHoraExtra(rowIndex),
+    };
+
     row.getCell(10).value = textoStatus(item);
 
     row.height = 20;
@@ -585,7 +682,11 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
       const cell = row.getCell(c);
 
       cell.font = { size: 10 };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+
       aplicarBorda(cell);
 
       if (c >= 3 && c <= 6) {
@@ -609,14 +710,28 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
       }
     }
 
+    for (let c = 3; c <= 9; c++) {
+      row.getCell(c).numFmt = "[h]:mm";
+    }
+
     const diaSemana = getNomeDiaSemanaPorDataBR(item.data);
 
     if (diaSemana === "Sábado" || diaSemana === "Domingo") {
-      row.getCell(2).font = { bold: true, color: { argb: "000000" } };
+      row.getCell(2).font = {
+        bold: true,
+        color: { argb: "000000" },
+      };
     }
 
-    row.getCell(8).font = { bold: true, color: { argb: "FF0000" } };
-    row.getCell(9).font = { bold: true, color: { argb: "0070C0" } };
+    row.getCell(8).font = {
+      bold: true,
+      color: { argb: "FF0000" },
+    };
+
+    row.getCell(9).font = {
+      bold: true,
+      color: { argb: "0070C0" },
+    };
 
     row.getCell(10).font = {
       bold: true,
@@ -635,8 +750,9 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   rowIndex += 2;
 
   ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
-  ws.getCell(`A${rowIndex}`).value =
-    `OBSERVAÇÕES: Horas Extras mês ${Number(mes)} = ${saldoTextoFuncionario}, ajustada ao banco de horas.`;
+  ws.getCell(`A${rowIndex}`).value = `OBSERVAÇÕES: Horas Extras mês ${Number(
+    mes
+  )} = ${saldoTextoFuncionario}, ajustada ao banco de horas.`;
   ws.getCell(`A${rowIndex}`).font = { bold: true };
   ws.getCell(`A${rowIndex}`).alignment = { horizontal: "left" };
 

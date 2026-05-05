@@ -451,7 +451,26 @@ function aplicarBorda(cell, color = "BFBFBF") {
   };
 }
 
-function criarCargaHoraria(ws) {
+function calcularCargaHorariaFuncionario(funcionario) {
+  const entrada = horaParaNumeroExcel(funcionario.chegada);
+  const intervaloInicio = horaParaNumeroExcel(funcionario.intervalo_inicio);
+  const intervaloFim = horaParaNumeroExcel(funcionario.intervalo_fim);
+  const saida = horaParaNumeroExcel(funcionario.saida);
+
+  if (!entrada || !intervaloInicio || !intervaloFim || !saida) {
+    return horaParaNumeroExcel("08:30");
+  }
+
+  let primeiroPeriodo = intervaloInicio - entrada;
+  let segundoPeriodo = saida - intervaloFim;
+
+  if (primeiroPeriodo < 0) primeiroPeriodo = 1 - entrada + intervaloInicio;
+  if (segundoPeriodo < 0) segundoPeriodo = 1 - intervaloFim + saida;
+
+  return primeiroPeriodo + segundoPeriodo;
+}
+
+function criarCargaHoraria(ws, funcionario) {
   ws.mergeCells("L3:M3");
 
   ws.getCell("L3").value = "CARGA HORÁRIA";
@@ -469,22 +488,24 @@ function criarCargaHoraria(ws) {
   aplicarBorda(ws.getCell("L3"));
   aplicarBorda(ws.getCell("M3"));
 
+  const cargaFuncionario = calcularCargaHorariaFuncionario(funcionario);
+
   const cargaHoraria = [
-    ["Segunda", "08:30"],
-    ["Terça", "08:30"],
-    ["Quarta", "08:30"],
-    ["Quinta", "08:30"],
-    ["Sexta", "08:30"],
-    ["Sábado", "08:30"],
-    ["Domingo", "08:30"],
-    ["FERIADOS", "08:30"],
+    ["Segunda", cargaFuncionario],
+    ["Terça", cargaFuncionario],
+    ["Quarta", cargaFuncionario],
+    ["Quinta", cargaFuncionario],
+    ["Sexta", cargaFuncionario],
+    ["Sábado", cargaFuncionario],
+    ["Domingo", cargaFuncionario],
+    ["FERIADOS", cargaFuncionario],
   ];
 
   cargaHoraria.forEach((linha, index) => {
     const r = 6 + index;
 
     ws.getCell(`L${r}`).value = linha[0];
-    ws.getCell(`M${r}`).value = horaParaNumeroExcel(linha[1]);
+    ws.getCell(`M${r}`).value = linha[1];
     ws.getCell(`M${r}`).numFmt = "[h]:mm";
 
     ws.getCell(`L${r}`).fill = {
@@ -592,7 +613,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     aplicarBorda(ws.getRow(3).getCell(c));
   }
 
-  criarCargaHoraria(ws);
+  criarCargaHoraria(ws, funcionario);
 
   const headerIndex = 4;
   const header = ws.getRow(headerIndex);
@@ -788,7 +809,14 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
 async function buscarFuncionarioPorId(funcionarioId) {
   const result = await pool.query(
     `
-    SELECT id, nome, cpf
+    SELECT 
+      id, 
+      nome, 
+      cpf,
+      chegada,
+      intervalo_inicio,
+      intervalo_fim,
+      saida
     FROM funcionarios
     WHERE id = $1
     `,

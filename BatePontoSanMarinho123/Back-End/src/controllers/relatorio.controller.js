@@ -162,6 +162,17 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
 
   const funcionario = funcionarioQuery.rows[0];
 
+  const mesStr = String(mesNum).padStart(2, "0");
+  const inicioBusca = `${anoNum}-${mesStr}-01 00:00:00`;
+
+  const fimBuscaDate = new Date(anoNum, mesNum, 2);
+  const fimBusca = `${fimBuscaDate.getFullYear()}-${String(
+    fimBuscaDate.getMonth() + 1
+  ).padStart(2, "0")}-${String(fimBuscaDate.getDate()).padStart(
+    2,
+    "0"
+  )} 00:00:00`;
+
   const pontosQuery = `
     SELECT 
       p.id,
@@ -176,12 +187,12 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
     FROM pontos p
     JOIN funcionarios f ON f.id = p.funcionario_id
     WHERE p.funcionario_id = $1
-      AND EXTRACT(MONTH FROM p.marcado_em) = $2
-      AND EXTRACT(YEAR FROM p.marcado_em) = $3
+      AND p.marcado_em >= $2::timestamp
+      AND p.marcado_em < $3::timestamp
     ORDER BY p.marcado_em ASC, p.id ASC
   `;
 
-  const { rows } = await pool.query(pontosQuery, [id, mesNum, anoNum]);
+  const { rows } = await pool.query(pontosQuery, [id, inicioBusca, fimBusca]);
 
   const atestadosQuery = await pool.query(
     `
@@ -266,6 +277,46 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
       2,
       "0"
     )}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function horaParaMinutos(valor) {
+    if (!valor) return null;
+
+    const texto = String(valor).slice(0, 5);
+    const [h, m] = texto.split(":").map(Number);
+
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+
+    return h * 60 + m;
+  }
+
+  function funcionarioTrabalhaMadrugada() {
+    const entradaMin = horaParaMinutos(funcionario.chegada);
+    const saidaMin = horaParaMinutos(funcionario.saida);
+
+    if (entradaMin == null || saidaMin == null) return false;
+
+    return saidaMin <= entradaMin;
+  }
+
+  function formatarChaveDiaRelatorio(row) {
+    const data = zerarHora(row.marcado_em);
+    const tipo = String(row.tipo || "").trim().toLowerCase();
+
+    if (funcionarioTrabalhaMadrugada() && tipo !== "entrada") {
+      const dataHora = new Date(row.marcado_em);
+      const minutosBatida = dataHora.getHours() * 60 + dataHora.getMinutes();
+      const saidaMin = horaParaMinutos(funcionario.saida);
+
+      if (saidaMin != null && minutosBatida <= saidaMin + 180) {
+        data.setDate(data.getDate() - 1);
+      }
+    }
+
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(data.getDate()).padStart(2, "0")}`;
   }
 
   function formatarHora(data) {
@@ -523,7 +574,7 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
   const pontosPorDia = {};
 
   for (const row of rows) {
-    const chaveDia = formatarChaveDia(row.marcado_em);
+    const chaveDia = formatarChaveDiaRelatorio(row);
 
     if (!pontosPorDia[chaveDia]) {
       pontosPorDia[chaveDia] = [];

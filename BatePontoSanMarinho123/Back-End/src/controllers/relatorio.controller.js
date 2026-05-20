@@ -617,28 +617,10 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
     const atestadoDoDia = !!arquivoAtestado;
 
     if (faltaDoDia) {
-      const regrasFalta = {
-        entrada: funcionario.chegada,
-        intervalo_in: funcionario.intervalo_inicio,
-        intervalo_fi: funcionario.intervalo_fim,
-        saida: funcionario.saida,
-      };
-
-      const calculadoFalta = calcularDia({
-        pontos: {},
-        regras: regrasFalta,
-        ehLinhaExtra: false,
-        falta: true,
-      });
-
       final.push(
         linhaBaseResposta(dataAtual, {
-          entrada: calculadoFalta.entrada || "",
-          intervalo_inicio: calculadoFalta.intervalo_inicio || "",
-          intervalo_fim: calculadoFalta.intervalo_fim || "",
-          saida: calculadoFalta.saida || "",
-          saldo_bruto: Number(calculadoFalta.saldo_bruto) || 0,
-          atraso_total: formatarSaldo(Number(calculadoFalta.saldo_bruto) || 0),
+          saldo_bruto: 0,
+          atraso_total: formatarSaldo(0),
           falta: true,
           feriado: feriadoDoDia,
         })
@@ -648,8 +630,30 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
     }
 
     if (faltaJustificadaDoDia) {
+      const regrasFaltaJustificada = {
+        entrada: funcionario.chegada,
+        intervalo_in: funcionario.intervalo_inicio,
+        intervalo_fi: funcionario.intervalo_fim,
+        saida: funcionario.saida,
+      };
+
+      const calculadoFaltaJustificada = calcularDia({
+        pontos: {},
+        regras: regrasFaltaJustificada,
+        ehLinhaExtra: false,
+        falta: true,
+      });
+
       final.push(
         linhaBaseResposta(dataAtual, {
+          entrada: calculadoFaltaJustificada.entrada || "",
+          intervalo_inicio: calculadoFaltaJustificada.intervalo_inicio || "",
+          intervalo_fim: calculadoFaltaJustificada.intervalo_fim || "",
+          saida: calculadoFaltaJustificada.saida || "",
+          saldo_bruto: Number(calculadoFaltaJustificada.saldo_bruto) || 0,
+          atraso_total: formatarSaldo(
+            Number(calculadoFaltaJustificada.saldo_bruto) || 0
+          ),
           falta_justificada: true,
           justificativa_falta: ajusteDia.justificativa_falta || "",
           feriado: feriadoDoDia,
@@ -659,136 +663,136 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
       continue;
     }
 
-    if (folgaDoDia) {
-      final.push(
-        linhaBaseResposta(dataAtual, {
-          folga: true,
-          feriado: feriadoDoDia,
-        })
-      );
+  if (folgaDoDia) {
+    final.push(
+      linhaBaseResposta(dataAtual, {
+        folga: true,
+        feriado: feriadoDoDia,
+      })
+    );
 
-      continue;
-    }
+    continue;
+  }
 
-    if (feriasDoDia) {
-      final.push(
-        linhaBaseResposta(dataAtual, {
-          ferias: true,
-          feriado: feriadoDoDia,
-        })
-      );
+  if (feriasDoDia) {
+    final.push(
+      linhaBaseResposta(dataAtual, {
+        ferias: true,
+        feriado: feriadoDoDia,
+      })
+    );
 
-      continue;
-    }
+    continue;
+  }
 
-    if (turnosDoDia.length > 0) {
-      const intervalosExtrasPrimeiraLinha = [];
+  if (turnosDoDia.length > 0) {
+    const intervalosExtrasPrimeiraLinha = [];
 
-      turnosDoDia.forEach((turno, index) => {
-        if (index === 0) return;
+    turnosDoDia.forEach((turno, index) => {
+      if (index === 0) return;
 
-        const ehLinhaSoDeIntervalo =
-          !turno.entrada &&
-          !turno.saida &&
-          turno.intervalo_inicio &&
-          turno.intervalo_fim;
+      const ehLinhaSoDeIntervalo =
+        !turno.entrada &&
+        !turno.saida &&
+        turno.intervalo_inicio &&
+        turno.intervalo_fim;
 
-        if (ehLinhaSoDeIntervalo) {
-          intervalosExtrasPrimeiraLinha.push({
-            inicio: turno.intervalo_inicio,
-            fim: turno.intervalo_fim,
-          });
-        }
-      });
+      if (ehLinhaSoDeIntervalo) {
+        intervalosExtrasPrimeiraLinha.push({
+          inicio: turno.intervalo_inicio,
+          fim: turno.intervalo_fim,
+        });
+      }
+    });
 
-      turnosDoDia.forEach((turno, index) => {
-        let result = {
-          entrada: formatarHora(turno.entrada),
+    turnosDoDia.forEach((turno, index) => {
+      let result = {
+        entrada: formatarHora(turno.entrada),
+        intervalo_inicio: formatarHora(turno.intervalo_inicio),
+        intervalo_fim: formatarHora(turno.intervalo_fim),
+        saida: formatarHora(turno.saida),
+        total_horas: "",
+        saldo_bruto: 0,
+      };
+
+      const ehLinhaSoDeIntervalo =
+        !turno.entrada &&
+        !turno.saida &&
+        turno.intervalo_inicio &&
+        turno.intervalo_fim;
+
+      const pontosCalculo =
+        index === 0
+          ? {
+            ...turno,
+            intervalosExtras: intervalosExtrasPrimeiraLinha,
+          }
+          : turno;
+
+      if (turno.entrada) {
+        const calculado = calcularDia({
+          pontos: pontosCalculo,
+          regras: turno.regras,
+          ehLinhaExtra: index > 0,
+          falta: false,
+        });
+
+        result = {
+          entrada: calculado.entrada || formatarHora(turno.entrada),
+          intervalo_inicio:
+            calculado.intervalo_inicio || formatarHora(turno.intervalo_inicio),
+          intervalo_fim:
+            calculado.intervalo_fim || formatarHora(turno.intervalo_fim),
+          saida: calculado.saida || formatarHora(turno.saida),
+          total_horas: calculado.total_horas || "",
+          saldo_bruto: Number(calculado.saldo_bruto) || 0,
+        };
+      } else if (ehLinhaSoDeIntervalo) {
+        result = {
+          entrada: "",
           intervalo_inicio: formatarHora(turno.intervalo_inicio),
           intervalo_fim: formatarHora(turno.intervalo_fim),
-          saida: formatarHora(turno.saida),
+          saida: "",
           total_horas: "",
           saldo_bruto: 0,
         };
+      }
 
-        const ehLinhaSoDeIntervalo =
-          !turno.entrada &&
-          !turno.saida &&
-          turno.intervalo_inicio &&
-          turno.intervalo_fim;
-
-        const pontosCalculo =
-          index === 0
-            ? {
-                ...turno,
-                intervalosExtras: intervalosExtrasPrimeiraLinha,
-              }
-            : turno;
-
-        if (turno.entrada) {
-          const calculado = calcularDia({
-            pontos: pontosCalculo,
-            regras: turno.regras,
-            ehLinhaExtra: index > 0,
-            falta: false,
-          });
-
-          result = {
-            entrada: calculado.entrada || formatarHora(turno.entrada),
-            intervalo_inicio:
-              calculado.intervalo_inicio || formatarHora(turno.intervalo_inicio),
-            intervalo_fim:
-              calculado.intervalo_fim || formatarHora(turno.intervalo_fim),
-            saida: calculado.saida || formatarHora(turno.saida),
-            total_horas: calculado.total_horas || "",
-            saldo_bruto: Number(calculado.saldo_bruto) || 0,
-          };
-        } else if (ehLinhaSoDeIntervalo) {
-          result = {
-            entrada: "",
-            intervalo_inicio: formatarHora(turno.intervalo_inicio),
-            intervalo_fim: formatarHora(turno.intervalo_fim),
-            saida: "",
-            total_horas: "",
-            saldo_bruto: 0,
-          };
-        }
-
-        final.push({
-          funcionario_id: funcionario.id,
-          data: dataAtual.toLocaleDateString("pt-BR"),
-          nome: turno.nome || funcionario.nome,
-          cpf: turno.cpf || funcionario.cpf,
-          entrada: result.entrada || "",
-          intervalo_inicio: result.intervalo_inicio || "",
-          intervalo_fim: result.intervalo_fim || "",
-          saida: result.saida || "",
-          total_horas: result.total_horas || "",
-          saldo_bruto: Number(result.saldo_bruto) || 0,
-          atraso_total: formatarSaldo(Number(result.saldo_bruto) || 0),
-          atestado: atestadoDoDia,
-          arquivo_atestado: arquivoAtestado || null,
-          falta: false,
-          folga: false,
-          ferias: false,
-          falta_justificada: false,
-          justificativa_falta: "",
-          feriado: feriadoDoDia,
-          ids_originais: turno.ids_originais || {},
-        });
+      final.push({
+        funcionario_id: funcionario.id,
+        data: dataAtual.toLocaleDateString("pt-BR"),
+        nome: turno.nome || funcionario.nome,
+        cpf: turno.cpf || funcionario.cpf,
+        entrada: result.entrada || "",
+        intervalo_inicio: result.intervalo_inicio || "",
+        intervalo_fim: result.intervalo_fim || "",
+        saida: result.saida || "",
+        total_horas: result.total_horas || "",
+        saldo_bruto: Number(result.saldo_bruto) || 0,
+        atraso_total: formatarSaldo(Number(result.saldo_bruto) || 0),
+        atestado: atestadoDoDia,
+        arquivo_atestado: arquivoAtestado || null,
+        falta: false,
+        folga: false,
+        ferias: false,
+        falta_justificada: false,
+        justificativa_falta: "",
+        feriado: feriadoDoDia,
+        ids_originais: turno.ids_originais || {},
       });
-    } else {
-      final.push(
-        linhaBaseResposta(dataAtual, {
-          atestado: atestadoDoDia,
-          arquivo_atestado: arquivoAtestado || null,
-          feriado: feriadoDoDia,
-        })
-      );
-    }
+    });
+  } else {
+    final.push(
+      linhaBaseResposta(dataAtual, {
+        atestado: atestadoDoDia,
+        arquivo_atestado: arquivoAtestado || null,
+        feriado: feriadoDoDia,
+      })
+    );
   }
+}
 
-  return final;
+return final;
 }
 
 const relatorioFuncionario = async (req, res) => {

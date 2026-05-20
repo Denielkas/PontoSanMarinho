@@ -18,7 +18,8 @@ function somarSaldo(registros = []) {
       item.folga ||
       item.atestado ||
       item.ferias ||
-      item.falta_justificada
+      item.falta ||
+      item.feriado
     ) {
       return acc;
     }
@@ -205,15 +206,15 @@ function formulaDiaSemanaExcel(rowNumber) {
 }
 
 function formulaHDia(rowNumber) {
-  return `IFERROR(IF(OR(D${rowNumber}="",D${rowNumber}=0),0,IF(TEXT(D${rowNumber},"[hh]:mm:ss")<TEXT(C${rowNumber},"[hh]:mm:ss"),(1-C${rowNumber}+D${rowNumber}),D${rowNumber}-C${rowNumber}))+IF(OR(F${rowNumber}="",F${rowNumber}=0),0,IF(TEXT(F${rowNumber},"[hh]:mm:ss")<TEXT(E${rowNumber},"[hh]:mm:ss"),(1-E${rowNumber}+F${rowNumber}),F${rowNumber}-E${rowNumber})),0)`;
+  return `IFERROR(IF((IF(OR(D${rowNumber}="",D${rowNumber}=0),0,IF(TEXT(D${rowNumber},"[hh]:mm:ss")<TEXT(C${rowNumber},"[hh]:mm:ss"),(1-C${rowNumber}+D${rowNumber}),D${rowNumber}-C${rowNumber}))+IF(OR(F${rowNumber}="",F${rowNumber}=0),0,IF(TEXT(F${rowNumber},"[hh]:mm:ss")<TEXT(E${rowNumber},"[hh]:mm:ss"),(1-E${rowNumber}+F${rowNumber}),F${rowNumber}-E${rowNumber})))<=0,"",(IF(OR(D${rowNumber}="",D${rowNumber}=0),0,IF(TEXT(D${rowNumber},"[hh]:mm:ss")<TEXT(C${rowNumber},"[hh]:mm:ss"),(1-C${rowNumber}+D${rowNumber}),D${rowNumber}-C${rowNumber}))+IF(OR(F${rowNumber}="",F${rowNumber}=0),0,IF(TEXT(F${rowNumber},"[hh]:mm:ss")<TEXT(E${rowNumber},"[hh]:mm:ss"),(1-E${rowNumber}+F${rowNumber}),F${rowNumber}-E${rowNumber})))), "")`;
 }
 
 function formulaAtraso(rowNumber) {
-  return `IF(A${rowNumber}="",0,IF(OR((VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber})<0,C${rowNumber}=""),0,(VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber})))`;
+  return `IF(A${rowNumber}="","",IF(OR((VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber})<=0,C${rowNumber}=""),"",((VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber}))))`;
 }
 
 function formulaHoraExtra(rowNumber) {
-  return `IF(A${rowNumber}="",0,IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<0,0,(G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))))`;
+  return `IF(A${rowNumber}="","",IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<=0,"",((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)))))`;
 }
 
 /* =========================================================
@@ -754,7 +755,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     }
 
     for (let c = 3; c <= 9; c++) {
-      row.getCell(c).numFmt = "[h]:mm";
+      row.getCell(c).numFmt = '[h]:mm;""';
     }
 
     const diaSemana = getNomeDiaSemanaPorDataBR(item.data);
@@ -790,22 +791,119 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     rowIndex++;
   });
 
-  rowIndex += 2;
+  const primeiraLinhaDados = 5;
+const ultimaLinhaDados = rowIndex - 1;
 
-  ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
-  ws.getCell(`A${rowIndex}`).value = `OBSERVAÇÕES: Horas Extras mês ${Number(
+rowIndex++;
+
+const linhaTotais = rowIndex;
+
+ws.getCell(`A${linhaTotais}`).value = "TOTAIS";
+ws.getCell(`A${linhaTotais}`).font = { bold: true };
+ws.getCell(`A${linhaTotais}`).alignment = {
+  horizontal: "center",
+  vertical: "middle",
+};
+
+ws.mergeCells(`A${linhaTotais}:F${linhaTotais}`);
+
+ws.getCell(`G${linhaTotais}`).value = {
+  formula: `SUM(G${primeiraLinhaDados}:G${ultimaLinhaDados})`,
+};
+
+ws.getCell(`H${linhaTotais}`).value = {
+  formula: `SUM(H${primeiraLinhaDados}:H${ultimaLinhaDados})`,
+};
+
+ws.getCell(`I${linhaTotais}`).value = {
+  formula: `SUM(I${primeiraLinhaDados}:I${ultimaLinhaDados})`,
+};
+
+ws.getCell(`J${linhaTotais}`).value = {
+  formula: `I${linhaTotais}-H${linhaTotais}`,
+};
+
+for (let c = 1; c <= 10; c++) {
+  const cell = ws.getRow(linhaTotais).getCell(c);
+  cell.font = { bold: true };
+  cell.alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+  cell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "D9D9D9" },
+  };
+  aplicarBorda(cell);
+}
+
+for (let c = 7; c <= 10; c++) {
+  ws.getRow(linhaTotais).getCell(c).numFmt = '[h]:mm;[Red]-[h]:mm;""';
+}
+
+ws.getCell(`H${linhaTotais}`).font = {
+  bold: true,
+  color: { argb: "FF0000" },
+};
+
+ws.getCell(`I${linhaTotais}`).font = {
+  bold: true,
+  color: { argb: "0070C0" },
+};
+
+ws.getCell(`J${linhaTotais}`).font = {
+  bold: true,
+  color: { argb: "0070C0" },
+};
+
+ws.addConditionalFormatting({
+  ref: `J${linhaTotais}`,
+  rules: [
+    {
+      type: "cellIs",
+      operator: "lessThan",
+      formulae: ["0"],
+      style: {
+        font: {
+          bold: true,
+          color: { argb: "FF0000" },
+        },
+      },
+    },
+    {
+      type: "cellIs",
+      operator: "greaterThan",
+      formulae: ["0"],
+      style: {
+        font: {
+          bold: true,
+          color: { argb: "0070C0" },
+        },
+      },
+    },
+  ],
+});
+
+rowIndex += 2;
+
+ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
+ws.getCell(`A${rowIndex}`).value = {
+  formula: `"OBSERVAÇÕES: Horas Extras mês ${Number(
     mes
-  )} = ${saldoTextoFuncionario}, ajustada ao banco de horas.`;
-  ws.getCell(`A${rowIndex}`).font = { bold: true };
-  ws.getCell(`A${rowIndex}`).alignment = { horizontal: "left" };
+  )} = "&TEXT(ABS(J${linhaTotais}),"[h]""h""mm")&" enviadas para o banco de horas."`,
+};
 
-  rowIndex++;
+ws.getCell(`A${rowIndex}`).font = { bold: true };
+ws.getCell(`A${rowIndex}`).alignment = { horizontal: "left" };
 
-  ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
-  ws.getCell(`A${rowIndex}`).value =
-    "As horas positivas/negativas serão pagas ou descontadas no prazo de 60 dias.";
+rowIndex++;
 
-  rowIndex += 3;
+ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
+ws.getCell(`A${rowIndex}`).value =
+  "As horas positivas/negativas serão pagas ou descontadas no prazo de 60 dias.";
+
+rowIndex += 3;
 
   ws.mergeCells(`D${rowIndex}:G${rowIndex}`);
   ws.getCell(`D${rowIndex}`).value = "________________________________________";

@@ -83,7 +83,7 @@ export default function RelatorioFuncionario() {
 
   function calcularSaldoTexto(resultado) {
     const totalMinutos = resultado.reduce((acc, r) => {
-      if (r.folga || r.ferias || r.atestado || r.falta_justificada) return acc;
+      if (r.folga || r.ferias || r.atestado || r.falta || r.feriado) return acc;
 
       const saldo = Number(r.saldo_bruto) || 0;
 
@@ -242,8 +242,7 @@ export default function RelatorioFuncionario() {
 
       abrirModal(
         "Sucesso",
-        `Horário padrão lançado. Inseridos: ${
-          response.data?.dias_inseridos || 0
+        `Horário padrão lançado. Inseridos: ${response.data?.dias_inseridos || 0
         } dia(s). Ignorados: ${response.data?.dias_ignorados || 0} dia(s).`
       );
 
@@ -556,9 +555,8 @@ export default function RelatorioFuncionario() {
         <div
           className="resumo-total"
           style={{
-            borderLeft: `10px solid ${
-              somaAtraso.startsWith("-") ? "#e74c3c" : "#2ecc71"
-            }`,
+            borderLeft: `10px solid ${somaAtraso.startsWith("-") ? "#e74c3c" : "#2ecc71"
+              }`,
           }}
         >
           <span>Saldo Acumulado no Período:</span>
@@ -593,13 +591,10 @@ export default function RelatorioFuncionario() {
             {dados.map((d, i) => (
               <tr
                 key={`${d.funcionario_id}-${d.data}-${i}`}
-                className={`${d.atestado ? "linha-atestado" : ""} ${
-                  d.falta ? "linha-falta" : ""
-                } ${d.folga ? "linha-folga" : ""} ${
-                  d.ferias ? "linha-ferias" : ""
-                } ${
-                  d.falta_justificada ? "linha-falta-justificada" : ""
-                } ${d.feriado ? "linha-feriado" : ""}`}
+                className={`${d.atestado ? "linha-atestado" : ""} ${d.falta ? "linha-falta" : ""
+                  } ${d.folga ? "linha-folga" : ""} ${d.ferias ? "linha-ferias" : ""
+                  } ${d.falta_justificada ? "linha-falta-justificada" : ""
+                  } ${d.feriado ? "linha-feriado" : ""}`}
               >
                 <td>
                   <strong>{d.data}</strong>
@@ -617,21 +612,23 @@ export default function RelatorioFuncionario() {
                     color: d.falta_justificada
                       ? "#fca5a5"
                       : d.atestado
-                      ? "#f59e0b"
-                      : d.folga
-                      ? "#3b82f6"
-                      : d.ferias
-                      ? "#8b5cf6"
-                      : d.feriado
-                      ? "#38bdf8"
-                      : d.saldo_bruto < 0
-                      ? "#e74c3c"
-                      : "#27ae60",
+                        ? "#f59e0b"
+                        : d.folga
+                          ? "#3b82f6"
+                          : d.ferias
+                            ? "#8b5cf6"
+                            : d.feriado
+                              ? "#38bdf8"
+                              : d.saldo_bruto < 0
+                                ? "#e74c3c"
+                                : "#27ae60",
                   }}
                 >
-                  {d.folga || d.ferias || d.atestado || d.falta_justificada
+                  {d.folga || d.ferias || d.atestado || d.falta
                     ? "+0h 0m"
-                    : `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
+                    : d.feriado
+                      ? limparValor(d.total_horas) || "+0h 0m"
+                      : `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
                         Math.abs(d.saldo_bruto) / 60
                       )}h ${Math.abs(d.saldo_bruto) % 60}m`}
                 </td>
@@ -728,21 +725,19 @@ export default function RelatorioFuncionario() {
               <div className="acoes-dia-grid">
                 <button
                   type="button"
-                  className={`acao-dia-card falta-card ${
-                    editData.falta ? "ativo" : ""
-                  }`}
+                  className={`acao-dia-card falta-card ${editData.falta ? "ativo" : ""
+                    }`}
                   onClick={() => alternarAcao("falta", !editData.falta)}
                 >
                   <strong>Falta</strong>
-                  <small>Gera saldo negativo</small>
+                  <small>Saldo zerado</small>
                   <span>{editData.falta ? "Marcado" : "Marcar"}</span>
                 </button>
 
                 <button
                   type="button"
-                  className={`acao-dia-card folga-card ${
-                    editData.folga ? "ativo" : ""
-                  }`}
+                  className={`acao-dia-card folga-card ${editData.folga ? "ativo" : ""
+                    }`}
                   onClick={() => alternarAcao("folga", !editData.folga)}
                 >
                   <strong>Folga</strong>
@@ -752,9 +747,8 @@ export default function RelatorioFuncionario() {
 
                 <button
                   type="button"
-                  className={`acao-dia-card ferias-card ${
-                    editData.ferias ? "ativo" : ""
-                  }`}
+                  className={`acao-dia-card ferias-card ${editData.ferias ? "ativo" : ""
+                    }`}
                   onClick={() => alternarAcao("ferias", !editData.ferias)}
                 >
                   <strong>Férias</strong>
@@ -764,9 +758,8 @@ export default function RelatorioFuncionario() {
 
                 <button
                   type="button"
-                  className={`acao-dia-card falta-justificada-card ${
-                    editData.falta_justificada ? "ativo" : ""
-                  }`}
+                  className={`acao-dia-card falta-justificada-card ${editData.falta_justificada ? "ativo" : ""
+                    }`}
                   onClick={() =>
                     alternarAcao(
                       "falta_justificada",
@@ -775,7 +768,7 @@ export default function RelatorioFuncionario() {
                   }
                 >
                   <strong>Falta Justificada</strong>
-                  <small>Não gera negativo</small>
+                  <small>Gera saldo negativo</small>
                   <span>
                     {editData.falta_justificada ? "Marcado" : "Marcar"}
                   </span>
@@ -783,9 +776,8 @@ export default function RelatorioFuncionario() {
 
                 <button
                   type="button"
-                  className={`acao-dia-card feriado-card ${
-                    editData.feriado ? "ativo" : ""
-                  }`}
+                  className={`acao-dia-card feriado-card ${editData.feriado ? "ativo" : ""
+                    }`}
                   onClick={() => alternarAcao("feriado", !editData.feriado)}
                 >
                   <strong>Feriado</strong>
@@ -822,9 +814,8 @@ export default function RelatorioFuncionario() {
               </div>
 
               <div
-                className={`modalGrid ${
-                  camposBloqueados ? "campos-desabilitados" : ""
-                }`}
+                className={`modalGrid ${camposBloqueados ? "campos-desabilitados" : ""
+                  }`}
               >
                 <label>
                   Entrada:

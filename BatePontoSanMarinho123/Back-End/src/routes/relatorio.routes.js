@@ -854,9 +854,16 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     formula: `SUM(I${primeiraLinhaDados}:I${ultimaLinhaDados})`,
   };
 
-  ws.getCell(`J${linhaTotais}`).value = {
-    formula: `IF(I${linhaTotais}-H${linhaTotais}<0,"-"&TEXT(ABS(I${linhaTotais}-H${linhaTotais}),"[h]:mm"),TEXT(I${linhaTotais}-H${linhaTotais},"[h]:mm"))`,
-  };
+  const totalFinalMin = Number(somarSaldo(dados)) || 0;
+
+  const absTotal = Math.abs(totalFinalMin);
+  const horas = Math.floor(absTotal / 60);
+  const minutos = absTotal % 60;
+
+  const textoFinal = `${totalFinalMin < 0 ? "-" : "+"}${String(horas).padStart(
+    2,
+    "0"
+  )}:${String(minutos).padStart(2, "0")}`;
 
   for (let c = 1; c <= 10; c++) {
     const cell = ws.getRow(linhaTotais).getCell(c);
@@ -873,10 +880,9 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     aplicarBorda(cell);
   }
 
-  ws.getRow(linhaTotais).getCell(7).numFmt = '[h]:mm';
-  ws.getRow(linhaTotais).getCell(8).numFmt = '[Red][h]:mm';
-  ws.getRow(linhaTotais).getCell(9).numFmt = '[Blue][h]:mm';
-  ws.getRow(linhaTotais).getCell(10).numFmt = "@";
+  ws.getRow(linhaTotais).getCell(7).numFmt = "[h]:mm";
+  ws.getRow(linhaTotais).getCell(8).numFmt = "[Red][h]:mm";
+  ws.getRow(linhaTotais).getCell(9).numFmt = "[Blue][h]:mm";
 
   ws.getCell(`H${linhaTotais}`).font = {
     bold: true,
@@ -888,34 +894,27 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     color: { argb: "0070C0" },
   };
 
+  ws.getCell(`J${linhaTotais}`).value = textoFinal;
+  ws.getCell(`J${linhaTotais}`).numFmt = "@";
   ws.getCell(`J${linhaTotais}`).font = {
     bold: true,
+    color: {
+      argb: totalFinalMin < 0 ? "FF0000" : "0070C0",
+    },
   };
-
-  const totalFinalTexto = String(
-    ws.getCell(`J${linhaTotais}`).value?.formula || ""
-  );
-
-  if (totalFinalTexto.includes('"-"')) {
-    ws.getCell(`J${linhaTotais}`).font = {
-      bold: true,
-      color: { argb: "FF0000" },
-    };
-  } else {
-    ws.getCell(`J${linhaTotais}`).font = {
-      bold: true,
-      color: { argb: "0070C0" },
-    };
-  }
+  ws.getCell(`J${linhaTotais}`).alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
 
   rowIndex += 2;
 
   ws.mergeCells(`A${rowIndex}:J${rowIndex}`);
-  ws.getCell(`A${rowIndex}`).value = {
-    formula: `"OBSERVAÇÕES: Horas Extras mês ${Number(
+
+  ws.getCell(`A${rowIndex}`).value =
+    `OBSERVAÇÕES: Horas Extras mês ${Number(
       mes
-    )} = "&J${linhaTotais}&" enviadas para o banco de horas."`,
-  };
+    )} = ${textoFinal} enviadas para o banco de horas.`;
 
   ws.getCell(`A${rowIndex}`).font = { bold: true };
   ws.getCell(`A${rowIndex}`).alignment = { horizontal: "left" };

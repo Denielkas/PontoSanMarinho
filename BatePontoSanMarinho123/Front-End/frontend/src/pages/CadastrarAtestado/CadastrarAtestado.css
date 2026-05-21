@@ -307,11 +307,11 @@ padding:22px;
 }
 
 .atestado-card.ativo {
-  border-color: rgba(148, 163, 184, 0.35);
+  border-color: rgba(148, 163, 184, 0.22);
 
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
 
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
 }
 
 .atestado-card.ativo span {

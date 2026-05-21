@@ -9,6 +9,7 @@ export default function CadastrarAtestado() {
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
   const [arquivo, setArquivo] = useState(null);
+  const [reporHoras, setReporHoras] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitulo, setModalTitulo] = useState("");
@@ -49,6 +50,7 @@ export default function CadastrarAtestado() {
       form.append("data_inicio", inicio);
       form.append("data_fim", fim);
       form.append("arquivo", arquivo);
+      form.append("repor_horas", reporHoras ? "true" : "false");
 
       await api.post("/atestado", form, {
         headers: {
@@ -62,6 +64,7 @@ export default function CadastrarAtestado() {
       setInicio("");
       setFim("");
       setArquivo(null);
+      setReporHoras(false);
 
       const inputFile = document.getElementById("arquivo-atestado");
       if (inputFile) inputFile.value = "";
@@ -123,6 +126,14 @@ export default function CadastrarAtestado() {
           accept="application/pdf"
           onChange={(e) => setArquivo(e.target.files[0] || null)}
         />
+
+        <button
+          type="button"
+          className={`atestado-btn ${reporHoras ? "ativo" : ""}`}
+          onClick={() => setReporHoras(!reporHoras)}
+        >
+          {reporHoras ? "Repor Hora do Atestado" : "Atestado Normal"}
+        </button>
 
         <button className="atestado-btn" onClick={salvar}>
           Salvar Atestado

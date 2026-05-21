@@ -13,9 +13,15 @@ async function garantirTabelaAtestados() {
       data_inicio DATE NOT NULL,
       data_fim DATE NOT NULL,
       arquivo TEXT NOT NULL,
+      repor_horas BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+
+  await pool.query(`
+  ALTER TABLE atestados
+  ADD COLUMN IF NOT EXISTS repor_horas BOOLEAN NOT NULL DEFAULT false
+`);
 }
 
 function converterDataBRparaISO(dataBR) {
@@ -32,7 +38,7 @@ async function salvarAtestado(req, res) {
   try {
     await garantirTabelaAtestados();
 
-    const { funcionario_id, data_inicio, data_fim } = req.body;
+    const { funcionario_id, data_inicio, data_fim, repor_horas } = req.body;
 
     if (!funcionario_id || !data_inicio || !data_fim) {
       return res.status(400).json({
@@ -60,14 +66,21 @@ async function salvarAtestado(req, res) {
     await pool.query(
       `
       INSERT INTO atestados (
+  funcionario_id,
+  data_inicio,
+  data_fim,
+  arquivo,
+  repor_horas
+)
+VALUES ($1, $2, $3, $4, $5)
+      `,
+      [
         funcionario_id,
         data_inicio,
         data_fim,
-        arquivo
-      )
-      VALUES ($1, $2, $3, $4)
-      `,
-      [funcionario_id, data_inicio, data_fim, arquivo]
+        arquivo,
+        repor_horas === "true" || repor_horas === true,
+      ]
     );
 
     return res.status(201).json({

@@ -129,10 +129,16 @@ export default function CadastrarAtestado() {
 
         <button
           type="button"
-          className={`atestado-btn ${reporHoras ? "ativo" : ""}`}
+          className={`atestado-card-opcao ${reporHoras ? "ativo" : ""}`}
           onClick={() => setReporHoras(!reporHoras)}
         >
-          {reporHoras ? "Repor Hora do Atestado" : "Atestado Normal"}
+          <strong>{reporHoras ? "Repor Atestado" : "Atestado Normal"}</strong>
+          <small>
+            {reporHoras
+              ? "Gera horas faltantes negativas"
+              : "Saldo zerado"}
+          </small>
+          <span>{reporHoras ? "Marcado" : "Marcar"}</span>
         </button>
 
         <button className="atestado-btn" onClick={salvar}>

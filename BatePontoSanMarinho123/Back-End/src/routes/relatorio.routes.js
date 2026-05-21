@@ -855,7 +855,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   };
 
   ws.getCell(`J${linhaTotais}`).value = {
-    formula: `I${linhaTotais}-H${linhaTotais}`,
+    formula: `(I${linhaTotais}-H${linhaTotais})`,
   };
 
   for (let c = 1; c <= 10; c++) {
@@ -873,9 +873,10 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     aplicarBorda(cell);
   }
 
-  for (let c = 7; c <= 10; c++) {
-    ws.getRow(linhaTotais).getCell(c).numFmt = '[Blue][h]:mm;[Red]-[h]:mm;""';
-  }
+  ws.getRow(linhaTotais).getCell(7).numFmt = '[h]:mm';
+  ws.getRow(linhaTotais).getCell(8).numFmt = '[Red][h]:mm';
+  ws.getRow(linhaTotais).getCell(9).numFmt = '[Blue][h]:mm';
+  ws.getRow(linhaTotais).getCell(10).numFmt = '[Blue][h]:mm;[Red]-[h]:mm';
 
   ws.getCell(`H${linhaTotais}`).font = {
     bold: true,
@@ -1168,6 +1169,7 @@ router.get("/excel/todos", async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "Sistema BatePonto";
     workbook.created = new Date();
+    workbook.properties.date1904 = true;
 
     let gerouAlgumFuncionario = false;
 

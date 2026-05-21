@@ -543,6 +543,10 @@ export default function RelatorioFuncionario() {
           Gerar Excel
         </button>
 
+        <button className="relatorio-btn btn-excel" onClick={gerarExcelSemSoma}>
+          Excel Sem Soma
+        </button>
+
         <button
           className="relatorio-btn btn-padrao"
           onClick={lancarHorarioPadraoMes}

@@ -184,7 +184,25 @@ function horaParaNumeroExcel(valor) {
   return (h * 60 + m) / 1440;
 }
 
+function horaParaTextoSemSoma(valor) {
+  if (!valor) return "";
 
+  let texto = String(valor).trim();
+
+  if (texto.includes(":")) {
+    const partes = texto.split(":");
+    const h = String(Number(partes[0])).padStart(2, "0");
+    const m = String(Number(partes[1])).padStart(2, "0");
+    return `${h}${m}`;
+  }
+
+  texto = texto.replace(/\D/g, "");
+
+  if (!texto) return "";
+  if (texto.length === 3) return `0${texto}`;
+
+  return texto.slice(0, 4);
+}
 
 function horaParaTextoPDF(valor) {
   const texto = limparTexto(valor, "");
@@ -944,6 +962,115 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   ws.getCell(`D${rowIndex}`).alignment = { horizontal: "center" };
 }
 
+function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
+  ws.pageSetup = {
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    paperSize: 9,
+  };
+
+  ws.views = [{ state: "frozen", ySplit: 5 }];
+
+  ws.mergeCells("A1:F1");
+  ws.getCell("A1").value = "SM MARINHO LTDA";
+  ws.getCell("A1").font = { bold: true, size: 18 };
+  ws.getCell("A1").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+
+  ws.mergeCells("A3:F3");
+  ws.getCell("A3").value = `${funcionario.nome || ""} - ${formatarPeriodoBonito(
+    mes,
+    ano
+  )}`;
+  ws.getCell("A3").font = { bold: true, size: 12 };
+  ws.getCell("A3").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+
+  const header = ws.getRow(5);
+
+  header.values = [
+    "Data",
+    "Dia Semana",
+    "Entrada",
+    "Saída",
+    "Entrada",
+    "Saída",
+  ];
+
+  for (let c = 1; c <= 6; c++) {
+    const cell = header.getCell(c);
+
+    cell.font = { bold: true };
+    cell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+    };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "D9D9D9" },
+    };
+
+    aplicarBorda(cell);
+  }
+
+  ws.getColumn("A").width = 12;
+  ws.getColumn("B").width = 14;
+  ws.getColumn("C").width = 12;
+  ws.getColumn("D").width = 12;
+  ws.getColumn("E").width = 12;
+  ws.getColumn("F").width = 12;
+
+  let rowIndex = 6;
+
+  dados.forEach((item, indice) => {
+    const row = ws.getRow(rowIndex);
+
+    row.getCell(1).value = limparTexto(item.data, "");
+    row.getCell(2).value = getNomeDiaSemanaPorDataBR(item.data);
+    row.getCell(3).value = horaParaTextoSemSoma(item.entrada);
+    row.getCell(4).value = horaParaTextoSemSoma(item.intervalo_inicio);
+    row.getCell(5).value = horaParaTextoSemSoma(item.intervalo_fim);
+    row.getCell(6).value = horaParaTextoSemSoma(item.saida);
+
+    row.height = 20;
+
+    for (let c = 1; c <= 6; c++) {
+      const cell = row.getCell(c);
+
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+
+      aplicarBorda(cell);
+
+      if (c >= 3 && c <= 6) {
+        cell.numFmt = "@";
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF2CC" },
+        };
+      } else if (indice % 2 === 0) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "F2F2F2" },
+        };
+      }
+    }
+
+    rowIndex++;
+  });
+}
+
 /* =========================================================
    BUSCAS AUXILIARES
 ========================================================= */
@@ -1204,6 +1331,70 @@ router.get("/excel/todos", async (req, res) => {
 
     if (!res.headersSent) {
       return res.status(500).json({ error: "Erro ao gerar Excel de todos." });
+    }
+  }
+});
+
+router.get("/excel-sem-soma/:funcId", async (req, res) => {
+  const { funcId } = req.params;
+  const { mes, ano } = req.query;
+
+  try {
+    if (!funcId || !mes || !ano) {
+      return res.status(400).json({
+        error: "Informe funcionário, mês e ano.",
+      });
+    }
+
+    const funcionario = await buscarFuncionarioPorId(funcId);
+
+    if (!funcionario) {
+      return res.status(404).json({
+        error: "Funcionário não encontrado.",
+      });
+    }
+
+    const dadosFuncionario = await buscarDadosRelatorioFuncionario(
+      funcId,
+      mes,
+      ano
+    );
+
+    if (!dadosFuncionario.length) {
+      return res.status(404).json({
+        error: "Nenhum registro encontrado.",
+      });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+
+    workbook.creator = "Sistema BatePonto";
+    workbook.created = new Date();
+
+    const ws = workbook.addWorksheet("Excel Sem Soma");
+
+    criarTabelaExcelSemSoma(ws, funcionario, dadosFuncionario, mes, ano);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="excel_sem_soma_${funcId}_${mes}_${ano}.xlsx"`
+    );
+
+    await workbook.xlsx.write(res);
+
+    res.end();
+  } catch (err) {
+    console.error("Erro ao gerar Excel sem soma:", err);
+
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: "Erro ao gerar Excel sem soma.",
+      });
     }
   }
 });

@@ -636,7 +636,29 @@ WHERE funcionario_id = $1
         falta: true,
       });
 
-      const saldoAtestado = -Math.abs(Number(calculadoAtestado.saldo_bruto) || 0);
+      const entradaMin = horaParaMinutos(funcionario.chegada);
+      const intervaloInicioMin = horaParaMinutos(funcionario.intervalo_inicio);
+      const intervaloFimMin = horaParaMinutos(funcionario.intervalo_fim);
+      const saidaMin = horaParaMinutos(funcionario.saida);
+
+      let minutosPrevistos = 0;
+
+      if (
+        entradaMin != null &&
+        intervaloInicioMin != null &&
+        intervaloFimMin != null &&
+        saidaMin != null
+      ) {
+        let primeiroPeriodo = intervaloInicioMin - entradaMin;
+        let segundoPeriodo = saidaMin - intervaloFimMin;
+
+        if (primeiroPeriodo < 0) primeiroPeriodo += 1440;
+        if (segundoPeriodo < 0) segundoPeriodo += 1440;
+
+        minutosPrevistos = primeiroPeriodo + segundoPeriodo;
+      }
+
+      const saldoAtestado = -Math.abs(minutosPrevistos);
 
       final.push(
         linhaBaseResposta(dataAtual, {

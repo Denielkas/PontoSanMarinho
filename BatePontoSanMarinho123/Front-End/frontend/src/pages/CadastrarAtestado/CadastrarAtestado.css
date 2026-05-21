@@ -306,12 +306,22 @@ padding:22px;
   margin-bottom: 10px;
 }
 
+.atestado-card {
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.atestado-card:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+
+  transform: translateY(-2px);
+}
+
 .atestado-card.ativo {
-  border-color: rgba(148, 163, 184, 0.22);
+  border-color: rgba(148, 163, 184, 0.25);
 
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(255, 255, 255, 0.06) !important;
 
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(4px);
 }
 
 .atestado-card.ativo span {

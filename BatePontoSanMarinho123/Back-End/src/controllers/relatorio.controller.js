@@ -622,20 +622,6 @@ WHERE funcionario_id = $1
     const atestadoDoDia = !!arquivoAtestado;
 
     if (atestadoDoDia && atestadoReporHoras) {
-      const regrasAtestado = {
-        entrada: funcionario.chegada,
-        intervalo_in: funcionario.intervalo_inicio,
-        intervalo_fi: funcionario.intervalo_fim,
-        saida: funcionario.saida,
-      };
-
-      const calculadoAtestado = calcularDia({
-        pontos: {},
-        regras: regrasAtestado,
-        ehLinhaExtra: false,
-        falta: true,
-      });
-
       const entradaMin = horaParaMinutos(funcionario.chegada);
       const intervaloInicioMin = horaParaMinutos(funcionario.intervalo_inicio);
       const intervaloFimMin = horaParaMinutos(funcionario.intervalo_fim);
@@ -658,20 +644,59 @@ WHERE funcionario_id = $1
         minutosPrevistos = primeiroPeriodo + segundoPeriodo;
       }
 
-      const saldoAtestado = -Math.abs(minutosPrevistos);
+      let minutosTrabalhados = 0;
+      let linhaComBatida = null;
+
+      if (turnosDoDia.length > 0) {
+        linhaComBatida = turnosDoDia[0];
+
+        const calculadoBatidas = calcularDia({
+          pontos: linhaComBatida,
+          regras: linhaComBatida.regras,
+          ehLinhaExtra: false,
+          falta: false,
+        });
+
+        const totalTexto = calculadoBatidas.total_horas || "";
+
+        const partes = String(totalTexto).replace("h", ":").replace("m", "").split(":");
+
+        const h = Number(partes[0]);
+        const m = Number(partes[1]);
+
+        if (!Number.isNaN(h) && !Number.isNaN(m)) {
+          minutosTrabalhados = h * 60 + m;
+        }
+      }
+
+      const minutosFaltantes = Math.max(0, minutosPrevistos - minutosTrabalhados);
+      const saldoAtestado = -Math.abs(minutosFaltantes);
 
       final.push(
         linhaBaseResposta(dataAtual, {
-          entrada: calculadoAtestado.entrada || "",
-          intervalo_inicio: calculadoAtestado.intervalo_inicio || "",
-          intervalo_fim: calculadoAtestado.intervalo_fim || "",
-          saida: calculadoAtestado.saida || "",
+          entrada: linhaComBatida?.entrada ? formatarHora(linhaComBatida.entrada) : "",
+          intervalo_inicio: linhaComBatida?.intervalo_inicio
+            ? formatarHora(linhaComBatida.intervalo_inicio)
+            : "",
+          intervalo_fim: linhaComBatida?.intervalo_fim
+            ? formatarHora(linhaComBatida.intervalo_fim)
+            : "",
+          saida: linhaComBatida?.saida ? formatarHora(linhaComBatida.saida) : "",
+
+          total_horas:
+            minutosTrabalhados > 0
+              ? `${Math.floor(minutosTrabalhados / 60)}h ${minutosTrabalhados % 60}m`
+              : "",
+
           saldo_bruto: saldoAtestado,
           atraso_total: formatarSaldo(saldoAtestado),
+
           atestado: true,
           atestado_repor_horas: true,
           arquivo_atestado: arquivoAtestado || null,
           feriado: feriadoDoDia,
+
+          ids_originais: linhaComBatida?.ids_originais || {},
         })
       );
 

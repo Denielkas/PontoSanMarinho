@@ -231,22 +231,30 @@ padding:22px;
   min-height: 115px;
   padding: 14px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+
+  background: rgba(15, 23, 42, 0.72);
+
   color: #ffffff;
+
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+
   gap: 8px;
+
   cursor: pointer;
+
   text-align: left;
+
   transition: 0.2s ease;
 }
 
 .atestado-card-opcao strong {
   font-size: 15px;
   font-weight: 800;
+  color: #ffffff;
 }
 
 .atestado-card-opcao small {
@@ -256,22 +264,39 @@ padding:22px;
 
 .atestado-card-opcao span {
   width: 100%;
+
   margin-top: 4px;
+
   padding: 6px 10px;
+
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.2);
+
+  background: rgba(148, 163, 184, 0.16);
+
   color: #ffffff;
+
   font-size: 12px;
   font-weight: 700;
+
   text-align: center;
 }
 
+.atestado-card-opcao:hover {
+  transform: translateY(-1px);
+
+  border-color: rgba(96, 165, 250, 0.45);
+}
+
 .atestado-card-opcao.ativo {
-  border-color: #f97316;
-  background: rgba(67, 20, 7, 0.9);
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4);
+  border-color: rgba(96, 165, 250, 0.55);
+
+  background: rgba(30, 41, 59, 0.88);
+
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.15);
 }
 
 .atestado-card-opcao.ativo span {
-  background: #f97316;
+  background: rgba(59, 130, 246, 0.25);
+
+  color: #bfdbfe;
 }

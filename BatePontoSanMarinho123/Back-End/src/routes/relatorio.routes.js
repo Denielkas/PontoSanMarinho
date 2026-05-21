@@ -184,35 +184,7 @@ function horaParaNumeroExcel(valor) {
   return (h * 60 + m) / 1440;
 }
 
-function horaParaTextoSemDoisPontos(valor) {
-  if (valor === null || valor === undefined || valor === "") {
-    return "";
-  }
 
-  let texto = String(valor).trim();
-
-  // Se vier 07:56:00
-  if (texto.includes(":")) {
-    const partes = texto.split(":");
-
-    const h = String(Number(partes[0])).padStart(2, "0");
-    const m = String(Number(partes[1])).padStart(2, "0");
-
-    return `${h}${m}`;
-  }
-
-  // Remove tudo que não for número
-  texto = texto.replace(/\D/g, "");
-
-  if (!texto) return "";
-
-  // 756 => 0756
-  if (texto.length === 3) {
-    texto = `0${texto}`;
-  }
-
-  return texto.slice(0, 4);
-}
 
 function horaParaTextoPDF(valor) {
   const texto = limparTexto(valor, "");
@@ -731,10 +703,10 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
       result: getNomeDiaSemanaPorDataBR(item.data),
     };
 
-    row.getCell(3).value = horaParaTextoSemDoisPontos(item.entrada);
-    row.getCell(4).value = horaParaTextoSemDoisPontos(item.intervalo_inicio);
-    row.getCell(5).value = horaParaTextoSemDoisPontos(item.intervalo_fim);
-    row.getCell(6).value = horaParaTextoSemDoisPontos(item.saida);
+    row.getCell(3).value = horaParaNumeroExcel(item.entrada);
+    row.getCell(4).value = horaParaNumeroExcel(item.intervalo_inicio);
+    row.getCell(5).value = horaParaNumeroExcel(item.intervalo_fim);
+    row.getCell(6).value = horaParaNumeroExcel(item.saida);
 
     const saldoMinutos = Number(item.saldo_bruto) || 0;
 
@@ -817,8 +789,8 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
       }
     }
 
-    for (let c = 7; c <= 10; c++) {
-      row.getCell(c).numFmt = '[Blue][h]:mm;[Red]-[h]:mm;""';
+    for (let c = 3; c <= 9; c++) {
+      row.getCell(c).numFmt = '[h]:mm;[Red]-[h]:mm;""';
     }
 
     const diaSemana = getNomeDiaSemanaPorDataBR(item.data);

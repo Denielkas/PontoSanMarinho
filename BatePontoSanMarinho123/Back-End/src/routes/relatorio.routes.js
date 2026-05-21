@@ -1124,6 +1124,18 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
     row.getCell(6).value =
       horaParaTextoSemSoma(item.saida) || "";
 
+    for (let c = 3; c <= 6; c++) {
+      const valor = String(row.getCell(c).value || "");
+
+      if (
+        valor.includes("NaN") ||
+        valor.includes("undefined") ||
+        valor.includes("null")
+      ) {
+        row.getCell(c).value = "";
+      }
+    }
+
     row.getCell(7).value = limparTexto(item.total_horas, "");
     row.getCell(8).value = saldoTexto;
     row.getCell(9).value = textoStatus(item);

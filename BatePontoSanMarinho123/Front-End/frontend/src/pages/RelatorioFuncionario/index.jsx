@@ -211,6 +211,45 @@ export default function RelatorioFuncionario() {
     }
   }
 
+  async function gerarExcelSemSoma() {
+    if (!funcId || funcId === "todos" || !mes || !ano) {
+      abrirModal(
+        "Atenção",
+        "Selecione apenas 1 funcionário, mês e ano para gerar o Excel sem soma.",
+        true
+      );
+      return;
+    }
+
+    try {
+      const response = await api.get(
+        `/relatorio/excel-sem-soma/${funcId}?mes=${mes}&ano=${ano}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      a.href = url;
+      a.download = `excel_sem_soma_${funcId}_${mes}_${ano}.xlsx`;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Erro ao gerar Excel sem soma:", err);
+      abrirModal("Erro", "Erro ao gerar Excel sem soma.", true);
+    }
+  }
+
   async function lancarHorarioPadraoMes() {
     if (!funcId || funcId === "todos" || !mes || !ano) {
       abrirModal(

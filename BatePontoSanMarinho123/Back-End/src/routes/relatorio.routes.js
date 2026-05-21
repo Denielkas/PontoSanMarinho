@@ -706,17 +706,46 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     row.getCell(5).value = horaParaNumeroExcel(item.intervalo_fim);
     row.getCell(6).value = horaParaNumeroExcel(item.saida);
 
-    row.getCell(7).value = {
-      formula: formulaHDia(rowIndex),
-    };
+    const saldoMinutos = Number(item.saldo_bruto) || 0;
 
-    row.getCell(8).value = {
-      formula: formulaAtraso(rowIndex),
-    };
+    const diaZerado =
+      item.folga ||
+      item.ferias ||
+      item.atestado ||
+      item.falta ||
+      item.feriado;
 
-    row.getCell(9).value = {
-      formula: formulaHoraExtra(rowIndex),
-    };
+    if (diaZerado) {
+      row.getCell(7).value = "";
+      row.getCell(8).value = "";
+      row.getCell(9).value = "";
+    } else if (item.falta_justificada) {
+      row.getCell(7).value = "";
+
+      if (saldoMinutos < 0) {
+        row.getCell(8).value = Math.abs(saldoMinutos) / 1440;
+      } else {
+        row.getCell(8).value = "";
+      }
+
+      row.getCell(9).value = "";
+    } else if (!temHorario(item)) {
+      row.getCell(7).value = "";
+      row.getCell(8).value = "";
+      row.getCell(9).value = "";
+    } else {
+      row.getCell(7).value = {
+        formula: formulaHDia(rowIndex),
+      };
+
+      row.getCell(8).value = {
+        formula: formulaAtraso(rowIndex),
+      };
+
+      row.getCell(9).value = {
+        formula: formulaHoraExtra(rowIndex),
+      };
+    }
 
     row.getCell(10).value = textoStatus(item);
 

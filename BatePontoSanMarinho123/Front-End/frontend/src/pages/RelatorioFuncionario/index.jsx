@@ -609,21 +609,22 @@ export default function RelatorioFuncionario() {
                 <td
                   style={{
                     fontWeight: "bold",
-                    color: d.falta
-                      ? "#e74c3c"
-                      : d.falta_justificada
+                    color:
+                      d.falta || String(d.status || "").toLowerCase().includes("falta")
                         ? "#e74c3c"
-                        : d.atestado
-                          ? "#f59e0b"
-                          : d.folga
-                            ? "#3b82f6"
-                            : d.ferias
-                              ? "#8b5cf6"
-                              : d.feriado
-                                ? "#38bdf8"
-                                : d.saldo_bruto < 0
-                                  ? "#e74c3c"
-                                  : "#27ae60",
+                        : d.falta_justificada
+                          ? "#e74c3c"
+                          : d.atestado
+                            ? "#f59e0b"
+                            : d.folga
+                              ? "#3b82f6"
+                              : d.ferias
+                                ? "#8b5cf6"
+                                : d.feriado
+                                  ? "#38bdf8"
+                                  : d.saldo_bruto < 0
+                                    ? "#e74c3c"
+                                    : "#27ae60",
                   }}
                 >
                   {d.folga || d.ferias || d.atestado || d.falta

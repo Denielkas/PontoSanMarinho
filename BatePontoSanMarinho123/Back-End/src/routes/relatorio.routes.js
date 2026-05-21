@@ -855,7 +855,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   };
 
   ws.getCell(`J${linhaTotais}`).value = {
-    formula: `(I${linhaTotais}-H${linhaTotais})`,
+    formula: `IF(I${linhaTotais}-H${linhaTotais}<0,"-"&TEXT(ABS(I${linhaTotais}-H${linhaTotais}),"[h]:mm"),TEXT(I${linhaTotais}-H${linhaTotais},"[h]:mm"))`,
   };
 
   for (let c = 1; c <= 10; c++) {
@@ -876,7 +876,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   ws.getRow(linhaTotais).getCell(7).numFmt = '[h]:mm';
   ws.getRow(linhaTotais).getCell(8).numFmt = '[Red][h]:mm';
   ws.getRow(linhaTotais).getCell(9).numFmt = '[Blue][h]:mm';
-  ws.getRow(linhaTotais).getCell(10).numFmt = '[Blue][h]:mm;[Red]-[h]:mm';
+  ws.getRow(linhaTotais).getCell(10).numFmt = "@";
 
   ws.getCell(`H${linhaTotais}`).font = {
     bold: true,
@@ -927,7 +927,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   ws.getCell(`A${rowIndex}`).value = {
     formula: `"OBSERVAÇÕES: Horas Extras mês ${Number(
       mes
-    )} = "&TEXT(J${linhaTotais},"[h]:mm")&" enviadas para o banco de horas."`,
+    )} = "&J${linhaTotais}&" enviadas para o banco de horas."`,
   };
 
   ws.getCell(`A${rowIndex}`).font = { bold: true };

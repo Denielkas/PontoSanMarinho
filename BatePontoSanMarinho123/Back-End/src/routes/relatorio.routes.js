@@ -214,7 +214,7 @@ function formulaAtraso(rowNumber) {
 }
 
 function formulaHoraExtra(rowNumber) {
-  return `IFERROR(IF(OR(A${rowNumber}="",C${rowNumber}="",G${rowNumber}=""),"",IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<=0,"",G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))),"")`;
+  return `IFERROR(IF(OR(A${rowNumber}="",C${rowNumber}="",G${rowNumber}=""),"",IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<=TIME(0,15,0),"",G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))),"")`;
 }
 
 /* =========================================================
@@ -708,12 +708,50 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
 
     const saldoMinutos = Number(item.saldo_bruto) || 0;
 
-    const diaZerado =
-      item.folga ||
-      item.ferias ||
-      item.atestado ||
-      item.falta ||
-      item.feriado;
+    const saldoMinutos = Number(item.saldo_bruto) || 0;
+
+    if (item.feriado) {
+      if (temHorario(item)) {
+        row.getCell(7).value = {
+          formula: formulaHDia(rowIndex),
+        };
+      } else {
+        row.getCell(7).value = "";
+      }
+
+      row.getCell(8).value = "";
+      row.getCell(9).value = "";
+    } else if (item.folga || item.ferias || item.atestado || item.falta) {
+      row.getCell(7).value = "";
+      row.getCell(8).value = "";
+      row.getCell(9).value = "";
+    } else if (item.falta_justificada) {
+      row.getCell(7).value = "";
+
+      if (saldoMinutos < 0) {
+        row.getCell(8).value = Math.abs(saldoMinutos) / 1440;
+      } else {
+        row.getCell(8).value = "";
+      }
+
+      row.getCell(9).value = "";
+    } else if (!temHorario(item)) {
+      row.getCell(7).value = "";
+      row.getCell(8).value = "";
+      row.getCell(9).value = "";
+    } else {
+      row.getCell(7).value = {
+        formula: formulaHDia(rowIndex),
+      };
+
+      row.getCell(8).value = {
+        formula: formulaAtraso(rowIndex),
+      };
+
+      row.getCell(9).value = {
+        formula: formulaHoraExtra(rowIndex),
+      };
+    }
 
     if (diaZerado) {
       row.getCell(7).value = "";
@@ -849,7 +887,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   };
 
   ws.getCell(`J${linhaTotais}`).value = {
-    formula: `I${linhaTotais}-H${linhaTotais}`,
+    formula: `IF(H${linhaTotais}>I${linhaTotais},H${linhaTotais}-I${linhaTotais},I${linhaTotais}-H${linhaTotais})`,
   };
 
   for (let c = 1; c <= 10; c++) {
@@ -890,9 +928,8 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     ref: `J${linhaTotais}`,
     rules: [
       {
-        type: "cellIs",
-        operator: "lessThan",
-        formulae: ["0"],
+        type: "expression",
+        formulae: [`H${linhaTotais}>I${linhaTotais}`],
         style: {
           font: {
             bold: true,
@@ -901,9 +938,8 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
         },
       },
       {
-        type: "cellIs",
-        operator: "greaterThan",
-        formulae: ["0"],
+        type: "expression",
+        formulae: [`I${linhaTotais}>=H${linhaTotais}`],
         style: {
           font: {
             bold: true,
@@ -920,7 +956,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   ws.getCell(`A${rowIndex}`).value = {
     formula: `"OBSERVAÇÕES: Horas Extras mês ${Number(
       mes
-    )} = "&TEXT(ABS(J${linhaTotais}),"[h]""h""mm")&" enviadas para o banco de horas."`,
+    )} = "&TEXT(J${linhaTotais},"[h]:mm")&" enviadas para o banco de horas."`,
   };
 
   ws.getCell(`A${rowIndex}`).font = { bold: true };

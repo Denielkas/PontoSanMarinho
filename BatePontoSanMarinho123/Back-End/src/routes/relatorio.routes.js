@@ -890,36 +890,23 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
 
   ws.getCell(`J${linhaTotais}`).font = {
     bold: true,
-    color: { argb: "0070C0" },
   };
 
-  ws.addConditionalFormatting({
-    ref: `J${linhaTotais}`,
-    rules: [
-      {
-        type: "cellIs",
-        operator: "lessThan",
-        formulae: ["0"],
-        style: {
-          font: {
-            bold: true,
-            color: { argb: "FF0000" },
-          },
-        },
-      },
-      {
-        type: "cellIs",
-        operator: "greaterThan",
-        formulae: ["0"],
-        style: {
-          font: {
-            bold: true,
-            color: { argb: "0070C0" },
-          },
-        },
-      },
-    ],
-  });
+  const totalFinalTexto = String(
+    ws.getCell(`J${linhaTotais}`).value?.formula || ""
+  );
+
+  if (totalFinalTexto.includes('"-"')) {
+    ws.getCell(`J${linhaTotais}`).font = {
+      bold: true,
+      color: { argb: "FF0000" },
+    };
+  } else {
+    ws.getCell(`J${linhaTotais}`).font = {
+      bold: true,
+      color: { argb: "0070C0" },
+    };
+  }
 
   rowIndex += 2;
 

@@ -621,46 +621,50 @@ WHERE funcionario_id = $1
     const feriadoDoDia = !!ajusteDia.feriado;
     const atestadoDoDia = !!arquivoAtestado;
 
+    if (atestadoDoDia && atestadoReporHoras) {
+      const regrasAtestado = {
+        entrada: funcionario.chegada,
+        intervalo_in: funcionario.intervalo_inicio,
+        intervalo_fi: funcionario.intervalo_fim,
+        saida: funcionario.saida,
+      };
+
+      const calculadoAtestado = calcularDia({
+        pontos: {},
+        regras: regrasAtestado,
+        ehLinhaExtra: false,
+        falta: true,
+      });
+
+      const saldoAtestado = -Math.abs(Number(calculadoAtestado.saldo_bruto) || 0);
+
+      final.push(
+        linhaBaseResposta(dataAtual, {
+          entrada: calculadoAtestado.entrada || "",
+          intervalo_inicio: calculadoAtestado.intervalo_inicio || "",
+          intervalo_fim: calculadoAtestado.intervalo_fim || "",
+          saida: calculadoAtestado.saida || "",
+          saldo_bruto: saldoAtestado,
+          atraso_total: formatarSaldo(saldoAtestado),
+          atestado: true,
+          atestado_repor_horas: true,
+          arquivo_atestado: arquivoAtestado || null,
+          feriado: feriadoDoDia,
+        })
+      );
+
+      continue;
+    }
+
     if (faltaDoDia) {
-      if (atestadoDoDia && atestadoReporHoras) {
-        const regrasAtestado = {
-          entrada: funcionario.chegada,
-          intervalo_in: funcionario.intervalo_inicio,
-          intervalo_fi: funcionario.intervalo_fim,
-          saida: funcionario.saida,
-        };
-
-        const calculadoAtestado = calcularDia({
-          pontos: {},
-          regras: regrasAtestado,
-          ehLinhaExtra: false,
+      final.push(
+        linhaBaseResposta(dataAtual, {
+          saldo_bruto: 0,
+          atraso_total: formatarSaldo(0),
           falta: true,
-        });
-
-        final.push(
-          linhaBaseResposta(dataAtual, {
-            entrada: calculadoAtestado.entrada || "",
-            intervalo_inicio: calculadoAtestado.intervalo_inicio || "",
-            intervalo_fim: calculadoAtestado.intervalo_fim || "",
-            saida: calculadoAtestado.saida || "",
-            saldo_bruto: Number(calculadoAtestado.saldo_bruto) || 0,
-            atraso_total: formatarSaldo(Number(calculadoAtestado.saldo_bruto) || 0),
-            atestado: true,
-            atestado_repor_horas: true,
-            arquivo_atestado: arquivoAtestado || null,
-            feriado: feriadoDoDia,
-          })
-        );
-      } else {
-        final.push(
-          linhaBaseResposta(dataAtual, {
-            atestado: atestadoDoDia,
-            atestado_repor_horas: atestadoReporHoras,
-            arquivo_atestado: arquivoAtestado || null,
-            feriado: feriadoDoDia,
-          })
-        );
-      }
+          feriado: feriadoDoDia,
+        })
+      );
 
       continue;
     }

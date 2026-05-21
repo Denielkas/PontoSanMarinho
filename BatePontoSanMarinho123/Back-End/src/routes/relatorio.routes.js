@@ -185,21 +185,50 @@ function horaParaNumeroExcel(valor) {
 }
 
 function horaParaTextoSemSoma(valor) {
-  if (!valor) return "";
+  if (
+    valor === null ||
+    valor === undefined ||
+    valor === "" ||
+    valor === "NaN" ||
+    valor === "NaN:NaN"
+  ) {
+    return "";
+  }
 
   let texto = String(valor).trim();
 
+  if (
+    texto === "NaN" ||
+    texto === "NaN:NaN" ||
+    texto.includes("Invalid")
+  ) {
+    return "";
+  }
+
+  // Se vier 07:56:00
   if (texto.includes(":")) {
     const partes = texto.split(":");
-    const h = String(Number(partes[0])).padStart(2, "0");
-    const m = String(Number(partes[1])).padStart(2, "0");
-    return `${h}${m}`;
+
+    const h = Number(partes[0]);
+    const m = Number(partes[1]);
+
+    if (
+      Number.isNaN(h) ||
+      Number.isNaN(m)
+    ) {
+      return "";
+    }
+
+    return `${String(h).padStart(2, "0")}${String(m).padStart(2, "0")}`;
   }
 
   texto = texto.replace(/\D/g, "");
 
   if (!texto) return "";
-  if (texto.length === 3) return `0${texto}`;
+
+  if (texto.length === 3) {
+    texto = `0${texto}`;
+  }
 
   return texto.slice(0, 4);
 }
@@ -961,6 +990,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   ws.getCell(`D${rowIndex}`).value = "Assinatura do funcionário";
   ws.getCell(`D${rowIndex}`).alignment = { horizontal: "center" };
 }
+
 function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
   ws.pageSetup = {
     orientation: "landscape",
@@ -1082,10 +1112,17 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
     row.getCell(1).value = limparTexto(item.data, "");
     row.getCell(2).value = getNomeDiaSemanaPorDataBR(item.data);
 
-    row.getCell(3).value = horaParaTextoSemSoma(item.entrada);
-    row.getCell(4).value = horaParaTextoSemSoma(item.intervalo_inicio);
-    row.getCell(5).value = horaParaTextoSemSoma(item.intervalo_fim);
-    row.getCell(6).value = horaParaTextoSemSoma(item.saida);
+    row.getCell(3).value =
+      horaParaTextoSemSoma(item.entrada) || "";
+
+    row.getCell(4).value =
+      horaParaTextoSemSoma(item.intervalo_inicio) || "";
+
+    row.getCell(5).value =
+      horaParaTextoSemSoma(item.intervalo_fim) || "";
+
+    row.getCell(6).value =
+      horaParaTextoSemSoma(item.saida) || "";
 
     row.getCell(7).value = limparTexto(item.total_horas, "");
     row.getCell(8).value = saldoTexto;
@@ -1133,8 +1170,8 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
           item.falta || item.falta_justificada || saldoMinutos < 0
             ? "FF0000"
             : item.feriado
-            ? "38BDF8"
-            : "0070C0",
+              ? "38BDF8"
+              : "0070C0",
       },
     };
 

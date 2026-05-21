@@ -127,19 +127,32 @@ export default function CadastrarAtestado() {
           onChange={(e) => setArquivo(e.target.files[0] || null)}
         />
 
-        <button
-          type="button"
-          className={`atestado-card-opcao ${reporHoras ? "ativo" : ""}`}
-          onClick={() => setReporHoras(!reporHoras)}
-        >
-          <strong>{reporHoras ? "Repor Atestado" : "Atestado Normal"}</strong>
-          <small>
-            {reporHoras
-              ? "Gera horas faltantes negativas"
-              : "Saldo zerado"}
-          </small>
-          <span>{reporHoras ? "Marcado" : "Marcar"}</span>
-        </button>
+        <div className="acoes-dia-grid atestado-grid">
+          <button
+            type="button"
+            className={`acao-dia-card atestado-card ${reporHoras ? "ativo" : ""
+              }`}
+            onClick={() => setReporHoras(!reporHoras)}
+          >
+            <strong>
+              {reporHoras
+                ? "Repor Hora"
+                : "Atestado"}
+            </strong>
+
+            <small>
+              {reporHoras
+                ? "Horas ficarão negativas"
+                : "Saldo zerado"}
+            </small>
+
+            <span>
+              {reporHoras
+                ? "Marcado"
+                : "Marcar"}
+            </span>
+          </button>
+        </div>
 
         <button className="atestado-btn" onClick={salvar}>
           Salvar Atestado

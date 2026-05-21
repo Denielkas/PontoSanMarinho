@@ -961,7 +961,6 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   ws.getCell(`D${rowIndex}`).value = "Assinatura do funcionário";
   ws.getCell(`D${rowIndex}`).alignment = { horizontal: "center" };
 }
-
 function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
   ws.pageSetup = {
     orientation: "landscape",
@@ -971,9 +970,9 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
     paperSize: 9,
   };
 
-  ws.views = [{ state: "frozen", ySplit: 5 }];
+  ws.views = [{ state: "frozen", ySplit: 4 }];
 
-  ws.mergeCells("A1:F1");
+  ws.mergeCells("A1:J1");
   ws.getCell("A1").value = "SM MARINHO LTDA";
   ws.getCell("A1").font = { bold: true, size: 18 };
   ws.getCell("A1").alignment = {
@@ -981,18 +980,44 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
     vertical: "middle",
   };
 
-  ws.mergeCells("A3:F3");
-  ws.getCell("A3").value = `${funcionario.nome || ""} - ${formatarPeriodoBonito(
-    mes,
-    ano
-  )}`;
-  ws.getCell("A3").font = { bold: true, size: 12 };
+  ws.getCell("A3").value = "Funcionário";
+  ws.getCell("A3").font = { bold: true };
   ws.getCell("A3").alignment = {
     horizontal: "center",
     vertical: "middle",
   };
+  ws.getCell("A3").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "D9D9D9" },
+  };
 
-  const header = ws.getRow(5);
+  ws.mergeCells("B3:F3");
+  ws.getCell("B3").value = funcionario.nome || "";
+  ws.getCell("B3").font = { bold: true };
+  ws.getCell("B3").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF2CC" },
+  };
+
+  ws.mergeCells("G3:J3");
+  ws.getCell("G3").value = `H.E. / Atrasos / A.N.    ${formatarPeriodoBonito(
+    mes,
+    ano
+  )}`;
+  ws.getCell("G3").font = { bold: true };
+  ws.getCell("G3").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+  ws.getCell("G3").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "D9D9D9" },
+  };
+
+  const header = ws.getRow(4);
 
   header.values = [
     "Data",
@@ -1001,9 +1026,13 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
     "Saída",
     "Entrada",
     "Saída",
+    "H. Diária",
+    "Saldo",
+    "Status",
+    "A.N.",
   ];
 
-  for (let c = 1; c <= 6; c++) {
+  for (let c = 1; c <= 10; c++) {
     const cell = header.getCell(c);
 
     cell.font = { bold: true };
@@ -1026,22 +1055,46 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
   ws.getColumn("D").width = 12;
   ws.getColumn("E").width = 12;
   ws.getColumn("F").width = 12;
+  ws.getColumn("G").width = 12;
+  ws.getColumn("H").width = 12;
+  ws.getColumn("I").width = 18;
+  ws.getColumn("J").width = 12;
 
-  let rowIndex = 6;
+  let rowIndex = 5;
 
   dados.forEach((item, indice) => {
     const row = ws.getRow(rowIndex);
 
+    const saldoMinutos = Number(item.saldo_bruto) || 0;
+
+    let saldoTexto = "";
+
+    if (item.folga || item.ferias || item.atestado || item.falta) {
+      saldoTexto = "+0h 0m";
+    } else if (item.feriado) {
+      saldoTexto = limparTexto(item.total_horas, "");
+    } else {
+      saldoTexto = `${saldoMinutos < 0 ? "-" : "+"}${Math.floor(
+        Math.abs(saldoMinutos) / 60
+      )}h ${Math.abs(saldoMinutos) % 60}m`;
+    }
+
     row.getCell(1).value = limparTexto(item.data, "");
     row.getCell(2).value = getNomeDiaSemanaPorDataBR(item.data);
+
     row.getCell(3).value = horaParaTextoSemSoma(item.entrada);
     row.getCell(4).value = horaParaTextoSemSoma(item.intervalo_inicio);
     row.getCell(5).value = horaParaTextoSemSoma(item.intervalo_fim);
     row.getCell(6).value = horaParaTextoSemSoma(item.saida);
 
+    row.getCell(7).value = limparTexto(item.total_horas, "");
+    row.getCell(8).value = saldoTexto;
+    row.getCell(9).value = textoStatus(item);
+    row.getCell(10).value = "";
+
     row.height = 20;
 
-    for (let c = 1; c <= 6; c++) {
+    for (let c = 1; c <= 10; c++) {
       const cell = row.getCell(c);
 
       cell.alignment = {
@@ -1058,6 +1111,12 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
           pattern: "solid",
           fgColor: { argb: "FFF2CC" },
         };
+      } else if (c >= 7 && c <= 10) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "EDEDED" },
+        };
       } else if (indice % 2 === 0) {
         cell.fill = {
           type: "pattern",
@@ -1066,6 +1125,29 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
         };
       }
     }
+
+    row.getCell(8).font = {
+      bold: true,
+      color: {
+        argb:
+          item.falta || item.falta_justificada || saldoMinutos < 0
+            ? "FF0000"
+            : item.feriado
+            ? "38BDF8"
+            : "0070C0",
+      },
+    };
+
+    row.getCell(9).font = {
+      bold: true,
+      color: { argb: corStatus(item) },
+    };
+
+    row.getCell(9).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: corFundoStatus(item) },
+    };
 
     rowIndex++;
   });

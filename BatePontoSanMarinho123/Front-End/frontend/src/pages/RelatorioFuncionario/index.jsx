@@ -657,26 +657,32 @@ export default function RelatorioFuncionario() {
                         ? "#e74c3c"
                         : d.falta_justificada
                           ? "#e74c3c"
-                          : d.atestado
-                            ? "#f59e0b"
-                            : d.folga
-                              ? "#3b82f6"
-                              : d.ferias
-                                ? "#8b5cf6"
-                                : d.feriado
-                                  ? "#38bdf8"
-                                  : d.saldo_bruto < 0
-                                    ? "#e74c3c"
-                                    : "#27ae60",
+                          : d.atestado_repor_horas
+                            ? "#b38a07"
+                            : d.atestado
+                              ? "#f59e0b"
+                              : d.folga
+                                ? "#3b82f6"
+                                : d.ferias
+                                  ? "#8b5cf6"
+                                  : d.feriado
+                                    ? "#38bdf8"
+                                    : d.saldo_bruto < 0
+                                      ? "#e74c3c"
+                                      : "#27ae60",
                   }}
                 >
-                  {d.folga || d.ferias || d.atestado || d.falta
-                    ? "+0h 0m"
-                    : d.feriado
-                      ? limparValor(d.total_horas) || "+0h 0m"
-                      : `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
-                        Math.abs(d.saldo_bruto) / 60
-                      )}h ${Math.abs(d.saldo_bruto) % 60}m`}
+                  {d.atestado_repor_horas
+                    ? `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
+                      Math.abs(d.saldo_bruto) / 60
+                    )}h ${Math.abs(d.saldo_bruto) % 60}m`
+                    : d.folga || d.ferias || d.atestado || d.falta
+                      ? "+0h 0m"
+                      : d.feriado
+                        ? limparValor(d.total_horas) || "+0h 0m"
+                        : `${d.saldo_bruto < 0 ? "-" : "+"}${Math.floor(
+                          Math.abs(d.saldo_bruto) / 60
+                        )}h ${Math.abs(d.saldo_bruto) % 60}m`}
                 </td>
 
                 <td>

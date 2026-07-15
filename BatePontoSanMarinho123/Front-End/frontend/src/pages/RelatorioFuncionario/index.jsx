@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import Select from "react-select";
 import { api } from "../../services/api";
 import "./RelatorioFuncionario.css";
 
@@ -74,7 +75,17 @@ export default function RelatorioFuncionario() {
   async function carregarFuncionarios() {
     try {
       const response = await api.get("/funcionarios");
-      setFuncionarios(Array.isArray(response.data) ? response.data : []);
+
+      const lista = Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      // Mostra somente funcionários ativos no relatório
+      const ativos = lista
+        .filter((f) => f.ativo !== false)
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+      setFuncionarios(ativos);
     } catch (err) {
       console.error("Erro ao carregar funcionários:", err);
       abrirModal("Erro", "Erro ao carregar funcionários.", true);
@@ -507,23 +518,29 @@ export default function RelatorioFuncionario() {
     editData.ferias ||
     editData.falta_justificada;
 
+  const opcoesFuncionarios = [
+    { value: "todos", label: "Todos os Funcionários" },
+    ...funcionarios.map((f) => ({
+      value: String(f.id),
+      label: f.nome,
+    })),
+  ];
+
   return (
     <div className="relatorio-container">
       <h2 className="relatorio-titulo">Relatório de Frequência</h2>
 
       <div className="relatorio-filtros">
-        <select
+        <Select
           className="relatorio-select"
-          value={funcId}
-          onChange={(e) => setFuncId(e.target.value)}
-        >
-          <option value="todos">Todos os Funcionários</option>
-          {funcionarios.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.nome} — {f.cpf}
-            </option>
-          ))}
-        </select>
+          options={opcoesFuncionarios}
+          value={opcoesFuncionarios.find((o) => o.value === funcId)}
+          onChange={(opcao) => setFuncId(opcao ? opcao.value : "todos")}
+          placeholder="Digite o nome do funcionário..."
+          isSearchable
+          isClearable
+          noOptionsMessage={() => "Funcionário não encontrado"}
+        />
 
         <select
           className="relatorio-select"

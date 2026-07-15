@@ -477,3 +477,79 @@
     width: 100%;
   }
 }
+
+/* ============================
+   INATIVAR FUNCIONÁRIO
+============================ */
+.acaoBtn-inativar {
+  background: #7c3aed;
+}
+
+.acaoBtn-inativar:hover {
+  background: #6d28d9;
+}
+
+/* ============================
+   LISTA DE INATIVOS
+============================ */
+.inativosSection {
+  margin-top: 35px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.inativosTituloBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.inativosTituloBox h3 {
+  margin: 0;
+  color: #d8b4fe;
+  font-size: 20px;
+}
+
+.inativosTituloBox span {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.25);
+  color: #e9d5ff;
+  font-weight: 700;
+}
+
+.tableWrapInativos {
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+
+.linhaInativa {
+  opacity: 0.75;
+}
+
+.linhaInativa:hover {
+  opacity: 1;
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.btnReativar {
+  padding: 9px 15px;
+  border: none;
+  border-radius: 9px;
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btnReativar:hover {
+  background: #6d28d9;
+  transform: translateY(-1px);
+}

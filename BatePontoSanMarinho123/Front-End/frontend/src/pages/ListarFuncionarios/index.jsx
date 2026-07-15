@@ -67,11 +67,26 @@ export default function ListarFuncionarios() {
 
     return lista.filter((f) => {
       const nome = String(f.nome || "").toLowerCase();
-      return nome.includes(termo);
+      const cpf = String(f.cpf || "").toLowerCase();
+      const funcao = String(f.funcao_nome || "").toLowerCase();
+
+      return (
+        nome.includes(termo) ||
+        cpf.includes(termo) ||
+        funcao.includes(termo)
+      );
     });
   }, [lista, busca]);
 
-  const total = useMemo(() => listaFiltrada.length, [listaFiltrada]);
+  const funcionariosAtivos = useMemo(() => {
+    return listaFiltrada.filter((f) => f.ativo !== false);
+  }, [listaFiltrada]);
+
+  const funcionariosInativos = useMemo(() => {
+    return listaFiltrada.filter((f) => f.ativo === false);
+  }, [listaFiltrada]);
+
+  const total = funcionariosAtivos.length;
 
   const carregar = async () => {
     setMsg("Carregando...");
@@ -219,11 +234,11 @@ export default function ListarFuncionarios() {
         old.map((f) =>
           Number(f.id) === Number(funcionarioId)
             ? {
-                ...f,
-                rosto_cadastrado: false,
-                possui_imagem_rosto: false,
-                foto_path: null,
-              }
+              ...f,
+              rosto_cadastrado: false,
+              possui_imagem_rosto: false,
+              foto_path: null,
+            }
             : f
         )
       );
@@ -236,6 +251,36 @@ export default function ListarFuncionarios() {
       alert("Cadastro facial excluído com sucesso.");
     } catch (err) {
       alert(err.response?.data?.error || "Erro ao excluir cadastro facial.");
+    }
+  };
+
+  const alterarStatusFuncionario = async (funcionario, novoStatus) => {
+    const acao = novoStatus ? "reativar" : "inativar";
+
+    const confirmou = window.confirm(
+      `Deseja realmente ${acao} o funcionário ${funcionario.nome}?`
+    );
+
+    if (!confirmou) return;
+
+    try {
+      await api.patch(`/funcionarios/${funcionario.id}/status`, {
+        ativo: novoStatus,
+      });
+
+      fecharModalAcoes();
+      await carregar();
+
+      alert(
+        novoStatus
+          ? "Funcionário reativado com sucesso."
+          : "Funcionário inativado com sucesso."
+      );
+    } catch (err) {
+      alert(
+        err.response?.data?.error ||
+        `Erro ao ${acao} funcionário.`
+      );
     }
   };
 
@@ -281,8 +326,8 @@ export default function ListarFuncionarios() {
           </thead>
 
           <tbody>
-            {listaFiltrada.length > 0 ? (
-              listaFiltrada.map((f) => (
+            {funcionariosAtivos.length > 0 ? (
+              funcionariosAtivos.map((f) => (
                 <tr key={f.id}>
                   <td>{f.id}</td>
                   <td>{f.nome}</td>
@@ -316,6 +361,61 @@ export default function ListarFuncionarios() {
         </table>
       </div>
 
+      {funcionariosInativos.length > 0 && (
+        <div className="inativosSection">
+          <div className="inativosTituloBox">
+            <h3>Funcionários inativados</h3>
+            <span>{funcionariosInativos.length}</span>
+          </div>
+
+          <div className="tableWrap tableWrapInativos">
+            <table className="listTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>CPF</th>
+                  <th>Função</th>
+                  <th>Inativado em</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {funcionariosInativos.map((f) => (
+                  <tr key={f.id} className="linhaInativa">
+                    <td>{f.id}</td>
+
+                    <td>{f.nome}</td>
+
+                    <td>{formatCPF(f.cpf)}</td>
+
+                    <td>{f.funcao_nome || "—"}</td>
+
+                    <td>
+                      {f.inativado_em
+                        ? new Date(f.inativado_em).toLocaleString("pt-BR")
+                        : "—"}
+                    </td>
+
+                    <td>
+                      <button
+                        className="btnReativar"
+                        onClick={() =>
+                          alterarStatusFuncionario(f, true)
+                        }
+                      >
+                        Reativar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {acoesModalOpen && funcionarioAcoes && (
         <div className="modal-overlay" onClick={fecharModalAcoes}>
           <div
@@ -345,11 +445,10 @@ export default function ListarFuncionarios() {
                   fecharModalAcoes();
                   navigate(`/app/cadastrar-rosto/${funcionarioAcoes.id}`);
                 }}
-                className={`acaoBtn ${
-                  funcionarioAcoes.rosto_cadastrado
-                    ? "acaoBtn-rosto-ok"
-                    : "acaoBtn-rosto"
-                }`}
+                className={`acaoBtn ${funcionarioAcoes.rosto_cadastrado
+                  ? "acaoBtn-rosto-ok"
+                  : "acaoBtn-rosto"
+                  }`}
               >
                 {funcionarioAcoes.rosto_cadastrado
                   ? "Rosto Cadastrado"
@@ -377,7 +476,18 @@ export default function ListarFuncionarios() {
                 >
                   Excluir Rosto
                 </button>
+
+
               )}
+
+              <button
+                className="acaoBtn acaoBtn-inativar"
+                onClick={() =>
+                  alterarStatusFuncionario(funcionarioAcoes, false)
+                }
+              >
+                Inativar Funcionário
+              </button>
             </div>
           </div>
         </div>

@@ -26,4 +26,7 @@ router.post("/", auth, ctrl.criar);
 
 router.put("/:id", auth, ctrl.atualizar);
 
+/* NOVA ROTA: INATIVAR OU REATIVAR */
+router.patch("/:id/status", auth, ctrl.alterarStatus);
+
 module.exports = router;

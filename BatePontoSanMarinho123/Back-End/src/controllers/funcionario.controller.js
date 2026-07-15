@@ -30,8 +30,19 @@ async function garantirTabelaFuncionarios() {
       funcao_id BIGINT REFERENCES funcoes(id) ON DELETE SET NULL,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
-    );
-  `);
+    )
+      ;
+  `)
+
+  await pool.query(`
+  ALTER TABLE funcionarios
+  ADD COLUMN IF NOT EXISTS ativo BOOLEAN NOT NULL DEFAULT true
+`);
+
+  await pool.query(`
+  ALTER TABLE funcionarios
+  ADD COLUMN IF NOT EXISTS inativado_em TIMESTAMP
+`);;
 }
 
 /* =========================================
@@ -105,7 +116,7 @@ exports.listar = async (_req, res) => {
       FROM funcionarios f
       LEFT JOIN funcoes fc ON fc.id = f.funcao_id
       LEFT JOIN face_embeddings fe ON fe.funcionario_id = f.id
-      ORDER BY f.id ASC
+      ORDER BY f.ativo DESC, f.nome ASC, f.id ASC
     `);
 
     return res.json(rows);
@@ -345,5 +356,64 @@ exports.atualizar = async (req, res) => {
   } catch (err) {
     console.error("Erro ao atualizar:", err);
     return res.status(500).json({ error: "Erro ao atualizar" });
+  }
+};
+
+/* =========================================
+   INATIVAR OU REATIVAR FUNCIONÁRIO
+========================================= */
+exports.alterarStatus = async (req, res) => {
+  try {
+    await garantirTabelas();
+
+    const id = Number(req.params.id);
+    const { ativo } = req.body;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        error: "ID inválido.",
+      });
+    }
+
+    if (typeof ativo !== "boolean") {
+      return res.status(400).json({
+        error: "O campo ativo deve ser true ou false.",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE funcionarios
+      SET ativo = $1,
+          inativado_em = CASE
+            WHEN $1 = false THEN NOW()
+            ELSE NULL
+          END,
+          updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, nome, ativo, inativado_em
+      `,
+      [ativo, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        error: "Funcionário não encontrado.",
+      });
+    }
+
+    return res.json({
+      ok: true,
+      message: ativo
+        ? "Funcionário reativado com sucesso."
+        : "Funcionário inativado com sucesso.",
+      funcionario: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Erro ao alterar status do funcionário:", err);
+
+    return res.status(500).json({
+      error: "Erro ao alterar status do funcionário.",
+    });
   }
 };

@@ -151,7 +151,8 @@ async function gerarRelatorioFuncionario(id, mes, ano) {
       intervalo_fim,
       saida
     FROM funcionarios
-    WHERE id = $1
+WHERE id = $1
+  AND ativo = true
     `,
     [id]
   );
@@ -902,10 +903,11 @@ const relatorioTodosFuncionarios = async (req, res) => {
     const { mes, ano } = req.query;
 
     const funcionariosQuery = await pool.query(`
-      SELECT id, nome, cpf
-      FROM funcionarios
-      ORDER BY nome ASC
-    `);
+  SELECT id, nome, cpf
+  FROM funcionarios
+  WHERE ativo = true
+  ORDER BY nome ASC
+`);
 
     const funcionarios = funcionariosQuery.rows;
     const resultadoFinal = [];

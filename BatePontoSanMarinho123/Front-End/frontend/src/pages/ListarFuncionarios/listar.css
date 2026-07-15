@@ -236,7 +236,7 @@
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
 
-  z-index: 99999;
+  z-index: 999999;
   overflow-y: auto;
 }
 
@@ -274,6 +274,7 @@
 }
 
 .modal-acoes-card {
+  position: relative;
   width: min(460px, 94vw);
   max-height: calc(100vh - 40px);
   overflow-y: auto;

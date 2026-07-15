@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { api } from "../../services/api";
 import "./listar.css";
 
@@ -422,82 +423,100 @@ export default function ListarFuncionarios() {
         </div>
       )}
 
-      {acoesModalOpen && funcionarioAcoes && (
-        <div className="modal-overlay" onClick={fecharModalAcoes}>
-          <div
-            className="modal-card modal-acoes-card"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-acoes-topo">
-              <h3>Ações — {funcionarioAcoes.nome}</h3>
-              <button className="modal-fechar-x" onClick={fecharModalAcoes}>
-                ×
-              </button>
-            </div>
+      {acoesModalOpen &&
+        funcionarioAcoes &&
+        createPortal(
+          <div className="modal-overlay" onClick={fecharModalAcoes}>
+            <div
+              className="modal-card modal-acoes-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-acoes-topo">
+                <h3>Ações — {funcionarioAcoes.nome}</h3>
 
-            <div className="acoesModalLista">
-              <button
-                className="btnSecondary"
-                onClick={() => {
-                  fecharModalAcoes();
-                  abrirModal(funcionarioAcoes);
-                }}
-              >
-                Alterar
-              </button>
-
-              <button
-                onClick={() => {
-                  fecharModalAcoes();
-                  navigate(`/app/cadastrar-rosto/${funcionarioAcoes.id}`);
-                }}
-                className={`acaoBtn ${funcionarioAcoes.rosto_cadastrado
-                  ? "acaoBtn-rosto-ok"
-                  : "acaoBtn-rosto"
-                  }`}
-              >
-                {funcionarioAcoes.rosto_cadastrado
-                  ? "Rosto Cadastrado"
-                  : "Cadastrar Rosto"}
-              </button>
-
-              {funcionarioAcoes.possui_imagem_rosto && (
                 <button
-                  onClick={() =>
-                    verImagem(funcionarioAcoes.id, funcionarioAcoes.nome)
-                  }
-                  className="acaoBtn acaoBtn-ver"
-                  disabled={imagemCarregando}
+                  className="modal-fechar-x"
+                  onClick={fecharModalAcoes}
                 >
-                  {imagemCarregando ? "Abrindo..." : "Ver Imagem"}
+                  ×
                 </button>
-              )}
+              </div>
 
-              {funcionarioAcoes.rosto_cadastrado && (
+              <div className="acoesModalLista">
                 <button
-                  onClick={() =>
-                    excluirRosto(funcionarioAcoes.id, funcionarioAcoes.nome)
-                  }
-                  className="acaoBtn acaoBtn-excluir"
+                  className="btnSecondary"
+                  onClick={() => {
+                    fecharModalAcoes();
+                    abrirModal(funcionarioAcoes);
+                  }}
                 >
-                  Excluir Rosto
+                  Alterar
                 </button>
 
+                <button
+                  onClick={() => {
+                    fecharModalAcoes();
+                    navigate(
+                      `/app/cadastrar-rosto/${funcionarioAcoes.id}`
+                    );
+                  }}
+                  className={`acaoBtn ${funcionarioAcoes.rosto_cadastrado
+                      ? "acaoBtn-rosto-ok"
+                      : "acaoBtn-rosto"
+                    }`}
+                >
+                  {funcionarioAcoes.rosto_cadastrado
+                    ? "Rosto Cadastrado"
+                    : "Cadastrar Rosto"}
+                </button>
 
-              )}
+                {funcionarioAcoes.possui_imagem_rosto && (
+                  <button
+                    onClick={() =>
+                      verImagem(
+                        funcionarioAcoes.id,
+                        funcionarioAcoes.nome
+                      )
+                    }
+                    className="acaoBtn acaoBtn-ver"
+                    disabled={imagemCarregando}
+                  >
+                    {imagemCarregando
+                      ? "Abrindo..."
+                      : "Ver Imagem"}
+                  </button>
+                )}
 
-              <button
-                className="acaoBtn acaoBtn-inativar"
-                onClick={() =>
-                  alterarStatusFuncionario(funcionarioAcoes, false)
-                }
-              >
-                Inativar Funcionário
-              </button>
+                {funcionarioAcoes.rosto_cadastrado && (
+                  <button
+                    onClick={() =>
+                      excluirRosto(
+                        funcionarioAcoes.id,
+                        funcionarioAcoes.nome
+                      )
+                    }
+                    className="acaoBtn acaoBtn-excluir"
+                  >
+                    Excluir Rosto
+                  </button>
+                )}
+
+                <button
+                  className="acaoBtn acaoBtn-inativar"
+                  onClick={() =>
+                    alterarStatusFuncionario(
+                      funcionarioAcoes,
+                      false
+                    )
+                  }
+                >
+                  Inativar Funcionário
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {open && (
         <div className="modal-overlay" onClick={fecharModal}>

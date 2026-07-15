@@ -94,11 +94,23 @@ export default function RelatorioFuncionario() {
 
   function calcularSaldoTexto(resultado) {
     const totalMinutos = resultado.reduce((acc, r) => {
-      if (r.folga || r.ferias || r.atestado || r.falta || r.feriado) return acc;
+      // Estes tipos de dia não entram no saldo acumulado
+      if (r.folga || r.ferias || r.falta || r.feriado) {
+        return acc;
+      }
+
+      // Atestado comum não entra no saldo.
+      // Atestado com horas para repor entra normalmente.
+      if (r.atestado && !r.atestado_repor_horas) {
+        return acc;
+      }
 
       const saldo = Number(r.saldo_bruto) || 0;
 
-      if (saldo > 0 && saldo <= 15) return acc;
+      // Ignora saldo positivo de até 15 minutos
+      if (saldo > 0 && saldo <= 15) {
+        return acc;
+      }
 
       return acc + saldo;
     }, 0);

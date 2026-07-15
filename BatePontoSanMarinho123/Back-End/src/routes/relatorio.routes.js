@@ -12,6 +12,29 @@ const {
    FUNÇÕES AUXILIARES
 ========================================================= */
 
+function obterDadosEmpresa(cnpj = "") {
+  const cnpjLimpo = String(cnpj).replace(/\D/g, "");
+
+  if (cnpjLimpo === "52830136000122") {
+    return {
+      nome: "SM MARINHO LTDA",
+      cnpj: "52.830.136/0001-22",
+    };
+  }
+
+  if (cnpjLimpo === "60871302000167") {
+    return {
+      nome: "SAN MARINHO HOTEL LTDA",
+      cnpj: "60.871.302/0001-67",
+    };
+  }
+
+  return {
+    nome: "EMPRESA NÃO INFORMADA",
+    cnpj: "CNPJ NÃO INFORMADO",
+  };
+}
+
 function somarSaldo(registros = []) {
   return registros.reduce((acc, item) => {
     if (
@@ -271,38 +294,47 @@ function formulaHoraExtra(rowNumber) {
 ========================================================= */
 
 function pdfHeader(doc, funcionario, mes, ano, saldoTexto) {
-  doc.font("Helvetica-Bold").fontSize(20).fillColor("black");
+  const empresa = obterDadosEmpresa(funcionario.cnpj_empresa);
 
-  doc.text("SM MARINHO LTDA", 20, 25, {
+  doc.font("Helvetica-Bold").fontSize(18).fillColor("black");
+
+  doc.text(empresa.nome, 20, 20, {
+    width: 800,
+    align: "center",
+  });
+
+  doc.font("Helvetica").fontSize(10).fillColor("black");
+
+  doc.text(`CNPJ: ${empresa.cnpj}`, 20, 43, {
     width: 800,
     align: "center",
   });
 
   doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
 
-  doc.text(`PERÍODO: ${formatarPeriodoBonito(mes, ano)}`, 20, 52, {
+  doc.text(`PERÍODO: ${formatarPeriodoBonito(mes, ano)}`, 20, 60, {
     width: 800,
     align: "center",
   });
 
-  doc.moveTo(20, 75).lineTo(820, 75).stroke();
+  doc.moveTo(20, 78).lineTo(820, 78).stroke();
 
   doc.font("Helvetica-Bold").fontSize(9);
 
-  doc.rect(20, 80, 140, 20).stroke();
-  doc.text("Funcionário", 25, 84, {
+  doc.rect(20, 83, 140, 20).stroke();
+  doc.text("Funcionário", 25, 87, {
     width: 130,
     align: "center",
   });
 
-  doc.rect(160, 80, 320, 20).stroke();
-  doc.text(funcionario.nome || "", 165, 84, {
+  doc.rect(160, 83, 320, 20).stroke();
+  doc.text(funcionario.nome || "", 165, 87, {
     width: 310,
     align: "left",
   });
 
-  doc.rect(485, 80, 335, 20).stroke();
-  doc.text(`H.E. / Atrasos / A.N.     ${saldoTexto}`, 490, 84, {
+  doc.rect(485, 83, 335, 20).stroke();
+  doc.text(`H.E. / Atrasos / A.N.     ${saldoTexto}`, 490, 87, {
     width: 320,
     align: "center",
   });
@@ -441,7 +473,7 @@ function desenharTabelaFuncionario(doc, funcionario, dados, mes, ano) {
 
   pdfHeader(doc, funcionario, mes, ano, saldoTextoFuncionario);
 
-  let y = 112;
+  let y = 118;
   y = pdfTableHeader(doc, y);
 
   for (let i = 0; i < dados.length; i++) {
@@ -453,7 +485,7 @@ function desenharTabelaFuncionario(doc, funcionario, dados, mes, ano) {
       });
 
       pdfHeader(doc, funcionario, mes, ano, saldoTextoFuncionario);
-      y = 112;
+      y = 118;
       y = pdfTableHeader(doc, y);
     }
 
@@ -612,6 +644,7 @@ function criarCargaHoraria(ws, funcionario) {
 
 function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   const saldoTextoFuncionario = formatarSaldoMinutos(somarSaldo(dados));
+  const empresa = obterDadosEmpresa(funcionario.cnpj_empresa);
 
   ws.pageSetup = {
     orientation: "landscape",
@@ -632,7 +665,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
   ws.views = [{ state: "frozen", ySplit: 4 }];
 
   ws.mergeCells("A1:J1");
-  ws.getCell("A1").value = "SM MARINHO LTDA";
+  ws.getCell("A1").value = empresa.nome;
   ws.getCell("A1").font = {
     bold: true,
     size: 18,
@@ -643,6 +676,19 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
     vertical: "middle",
   };
   ws.getRow(1).height = 30;
+
+  ws.mergeCells("A2:J2");
+  ws.getCell("A2").value = `CNPJ: ${empresa.cnpj}`;
+  ws.getCell("A2").font = {
+    bold: true,
+    size: 11,
+    color: { argb: "000000" },
+  };
+  ws.getCell("A2").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+  ws.getRow(2).height = 20;
 
   ws.getCell("A3").value = "Funcionário";
   ws.getCell("A3").font = { bold: true };
@@ -992,6 +1038,8 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
 }
 
 function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
+  const empresa = obterDadosEmpresa(funcionario.cnpj_empresa);
+
   ws.pageSetup = {
     orientation: "landscape",
     fitToPage: true,
@@ -1003,9 +1051,20 @@ function criarTabelaExcelSemSoma(ws, funcionario, dados, mes, ano) {
   ws.views = [{ state: "frozen", ySplit: 4 }];
 
   ws.mergeCells("A1:J1");
-  ws.getCell("A1").value = "SM MARINHO LTDA";
+  ws.getCell("A1").value = empresa.nome;
   ws.getCell("A1").font = { bold: true, size: 18 };
   ws.getCell("A1").alignment = {
+    horizontal: "center",
+    vertical: "middle",
+  };
+
+  ws.mergeCells("A2:J2");
+  ws.getCell("A2").value = `CNPJ: ${empresa.cnpj}`;
+  ws.getCell("A2").font = {
+    bold: true,
+    size: 11,
+  };
+  ws.getCell("A2").alignment = {
     horizontal: "center",
     vertical: "middle",
   };
@@ -1210,15 +1269,16 @@ async function buscarFuncionarioPorId(funcionarioId) {
   const result = await pool.query(
     `
     SELECT 
-      id, 
-      nome, 
-      cpf,
-      chegada,
-      intervalo_inicio,
-      intervalo_fim,
-      saida
-    FROM funcionarios
-    WHERE id = $1
+  id, 
+  nome, 
+  cpf,
+  cnpj_empresa,
+  chegada,
+  intervalo_inicio,
+  intervalo_fim,
+  saida
+FROM funcionarios
+WHERE id = $1
     `,
     [funcionarioId]
   );
@@ -1268,8 +1328,9 @@ router.get("/pdf/todos", async (req, res) => {
     }
 
     const funcionariosQuery = await pool.query(`
-      SELECT id, nome, cpf
+      SELECT id, nome, cpf, cnpj_empresa
       FROM funcionarios
+      WHERE ativo = true
       ORDER BY nome ASC
     `);
 
@@ -1401,8 +1462,9 @@ router.get("/excel/todos", async (req, res) => {
     }
 
     const funcionariosQuery = await pool.query(`
-      SELECT id, nome, cpf
+      SELECT id, nome, cpf, cnpj_empresa
       FROM funcionarios
+      WHERE ativo = true
       ORDER BY nome ASC
     `);
 

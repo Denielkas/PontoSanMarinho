@@ -461,8 +461,8 @@ export default function ListarFuncionarios() {
                     );
                   }}
                   className={`acaoBtn ${funcionarioAcoes.rosto_cadastrado
-                      ? "acaoBtn-rosto-ok"
-                      : "acaoBtn-rosto"
+                    ? "acaoBtn-rosto-ok"
+                    : "acaoBtn-rosto"
                     }`}
                 >
                   {funcionarioAcoes.rosto_cadastrado
@@ -518,154 +518,183 @@ export default function ListarFuncionarios() {
           document.body
         )}
 
-      {open && (
-        <div className="modal-overlay" onClick={fecharModal}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>Alterar Funcionário (ID {editing?.id})</h3>
+      {open &&
+        createPortal(
+          <div className="modal-overlay" onClick={fecharModal}>
+            <div
+              className="modal-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3>Alterar Funcionário (ID {editing?.id})</h3>
 
-            <div className="modal-grid">
-              <div>
-                <label>Nome</label>
-                <input name="nome" value={form.nome} onChange={onChange} />
-              </div>
-
-              <div>
-                <label>CPF</label>
-                <input
-                  name="cpf"
-                  value={form.cpf}
-                  onChange={onChange}
-                  maxLength={14}
-                />
-              </div>
-
-              <div>
-                <label>Função</label>
-                <select
-                  name="funcao_id"
-                  value={form.funcao_id}
-                  onChange={onChange}
-                >
-                  <option value="">Selecione</option>
-                  {funcoes.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.nome}
-                    </option>
-                  ))}
-                  <option value="outro">Outra função</option>
-                </select>
-              </div>
-
-              {form.funcao_id === "outro" && (
+              <div className="modal-grid">
                 <div>
-                  <label>Nova função</label>
+                  <label>Nome</label>
                   <input
-                    name="funcao_nome"
-                    value={form.funcao_nome}
+                    name="nome"
+                    value={form.nome}
                     onChange={onChange}
                   />
                 </div>
-              )}
 
-              <div>
-                <label>Chegada</label>
-                <input
-                  type="time"
-                  name="chegada"
-                  value={form.chegada}
-                  onChange={onChange}
-                />
-              </div>
-
-              <div>
-                <label>Início intervalo</label>
-                <input
-                  type="time"
-                  name="intervalo_inicio"
-                  value={form.intervalo_inicio}
-                  onChange={onChange}
-                />
-              </div>
-
-              <div>
-                <label>Fim intervalo</label>
-                <input
-                  type="time"
-                  name="intervalo_fim"
-                  value={form.intervalo_fim}
-                  onChange={onChange}
-                />
-              </div>
-
-              <div>
-                <label>Saída</label>
-                <input
-                  type="time"
-                  name="saida"
-                  value={form.saida}
-                  onChange={onChange}
-                />
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button className="modal-btn-light" onClick={fecharModal}>
-                Cancelar
-              </button>
-
-              <button
-                className="modal-btn-primary"
-                onClick={salvarAlteracoes}
-                disabled={saving}
-              >
-                {saving ? "Salvando..." : "Salvar alterações"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {imagemModalOpen && (
-        <div className="modal-overlay" onClick={fecharModalImagem}>
-          <div
-            className="modal-card modal-imagem-card"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-imagem-topo">
-              <h3>Imagem salva do reconhecimento</h3>
-              <button className="modal-fechar-x" onClick={fecharModalImagem}>
-                ×
-              </button>
-            </div>
-
-            <p className="modal-imagem-nome">{imagemModalNome}</p>
-
-            <div className="modal-imagem-wrap">
-              {!erroImagem ? (
-                <img
-                  src={imagemModalUrl}
-                  alt={`Rosto de ${imagemModalNome}`}
-                  className="modal-imagem-preview"
-                  onError={() => {
-                    setErroImagem(true);
-                  }}
-                />
-              ) : (
-                <div className="modal-imagem-erro-box">
-                  <p>Não foi possível carregar a imagem.</p>
-                  <p className="modal-imagem-url">{imagemModalUrl}</p>
+                <div>
+                  <label>CPF</label>
+                  <input
+                    name="cpf"
+                    value={form.cpf}
+                    onChange={onChange}
+                    maxLength={14}
+                  />
                 </div>
-              )}
-            </div>
 
-            <div className="modal-actions">
-              <button className="modal-btn-primary" onClick={fecharModalImagem}>
-                Fechar
-              </button>
+                <div>
+                  <label>Função</label>
+                  <select
+                    name="funcao_id"
+                    value={form.funcao_id}
+                    onChange={onChange}
+                  >
+                    <option value="">Selecione</option>
+
+                    {funcoes.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.nome}
+                      </option>
+                    ))}
+
+                    <option value="outro">Outra função</option>
+                  </select>
+                </div>
+
+                {form.funcao_id === "outro" && (
+                  <div>
+                    <label>Nova função</label>
+                    <input
+                      name="funcao_nome"
+                      value={form.funcao_nome}
+                      onChange={onChange}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label>Chegada</label>
+                  <input
+                    type="time"
+                    name="chegada"
+                    value={form.chegada}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div>
+                  <label>Início intervalo</label>
+                  <input
+                    type="time"
+                    name="intervalo_inicio"
+                    value={form.intervalo_inicio}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div>
+                  <label>Fim intervalo</label>
+                  <input
+                    type="time"
+                    name="intervalo_fim"
+                    value={form.intervalo_fim}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div>
+                  <label>Saída</label>
+                  <input
+                    type="time"
+                    name="saida"
+                    value={form.saida}
+                    onChange={onChange}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  className="modal-btn-light"
+                  onClick={fecharModal}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  className="modal-btn-primary"
+                  onClick={salvarAlteracoes}
+                  disabled={saving}
+                >
+                  {saving ? "Salvando..." : "Salvar alterações"}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
+
+      {imagemModalOpen &&
+        createPortal(
+          <div
+            className="modal-overlay"
+            onClick={fecharModalImagem}
+          >
+            <div
+              className="modal-card modal-imagem-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-imagem-topo">
+                <h3>Imagem salva do reconhecimento</h3>
+
+                <button
+                  className="modal-fechar-x"
+                  onClick={fecharModalImagem}
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="modal-imagem-nome">
+                {imagemModalNome}
+              </p>
+
+              <div className="modal-imagem-wrap">
+                {!erroImagem ? (
+                  <img
+                    src={imagemModalUrl}
+                    alt={`Rosto de ${imagemModalNome}`}
+                    className="modal-imagem-preview"
+                    onError={() => setErroImagem(true)}
+                  />
+                ) : (
+                  <div className="modal-imagem-erro-box">
+                    <p>Não foi possível carregar a imagem.</p>
+
+                    <p className="modal-imagem-url">
+                      {imagemModalUrl}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  className="modal-btn-primary"
+                  onClick={fecharModalImagem}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

@@ -182,6 +182,29 @@ function montarDataHora(dataBR, hora) {
   )} ${hora}:00`;
 }
 
+function montarDataHoraComDia(dataBR, hora, adicionarDias = 0) {
+  if (!dataBR || !hora) return null;
+
+  const [d, m, a] = String(dataBR).split("/");
+
+  const dataObj = new Date(
+    Number(a),
+    Number(m) - 1,
+    Number(d),
+    12,
+    0,
+    0
+  );
+
+  dataObj.setDate(dataObj.getDate() + adicionarDias);
+
+  const ano = dataObj.getFullYear();
+  const mes = String(dataObj.getMonth() + 1).padStart(2, "0");
+  const dia = String(dataObj.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia} ${hora}:00`;
+}
+
 function dataBRparaISO(dataBR) {
   if (!dataBR) return null;
 
@@ -584,70 +607,150 @@ exports.ajustar = async (req, res) => {
         message: faltaBool
           ? "Falta registrada com sucesso."
           : folgaBool
-          ? "Folga registrada com sucesso."
-          : feriasBool
-          ? "Férias registrada com sucesso."
-          : "Falta justificada registrada com sucesso.",
+            ? "Folga registrada com sucesso."
+            : feriasBool
+              ? "Férias registrada com sucesso."
+              : "Falta justificada registrada com sucesso.",
       });
     }
 
-    async function atualizarOuCriar(idExistente, tipoPonto, horaPonto) {
+    async function atualizarOuCriar(
+      idExistente,
+      tipoPonto,
+      horaPonto,
+      adicionarDias = 0
+    ) {
       if (!horaPonto) {
         if (idExistente) {
           await client.query(
             `
-            DELETE FROM pontos
-            WHERE id = $1 AND funcionario_id = $2
-            `,
+        DELETE FROM pontos
+        WHERE id=$1
+          AND funcionario_id=$2
+        `,
             [idExistente, funcionario_id]
           );
         }
+
         return null;
       }
 
-      const dataHora = montarDataHora(data, horaPonto);
-
-      if (!dataHora) {
-        throw new Error("Data/hora inválida para ajuste");
-      }
+      const dataHora = montarDataHoraComDia(
+        data,
+        horaPonto,
+        adicionarDias
+      );
 
       if (idExistente) {
         await client.query(
           `
-          UPDATE pontos
-          SET marcado_em = $1, tipo = $2
-          WHERE id = $3 AND funcionario_id = $4
-          `,
-          [dataHora, tipoPonto, idExistente, funcionario_id]
+      UPDATE pontos
+      SET marcado_em=$1,
+          tipo=$2
+      WHERE id=$3
+        AND funcionario_id=$4
+      `,
+          [
+            dataHora,
+            tipoPonto,
+            idExistente,
+            funcionario_id,
+          ]
         );
+
         return idExistente;
       }
 
       const { rows } = await client.query(
         `
-        INSERT INTO pontos (funcionario_id, tipo, marcado_em)
-        VALUES ($1, $2, $3)
-        RETURNING id
-        `,
-        [funcionario_id, tipoPonto, dataHora]
+    INSERT INTO pontos(
+      funcionario_id,
+      tipo,
+      marcado_em
+    )
+    VALUES($1,$2,$3)
+    RETURNING id
+    `,
+        [
+          funcionario_id,
+          tipoPonto,
+          dataHora,
+        ]
       );
 
       return rows[0].id;
     }
 
+    const horas = {
+      entrada: normalizarHora(entrada),
+      intervalo: normalizarHora(intervalo),
+      retorno: normalizarHora(retorno),
+      saida: normalizarHora(saida),
+    };
+
+    function passouMeiaNoite(horaAnterior, horaAtual) {
+      if (!horaAnterior || !horaAtual) return false;
+
+      return horaAtual < horaAnterior;
+    }
+
+    const dias = {
+      entrada: 0,
+      intervalo: 0,
+      retorno: 0,
+      saida: 0,
+    };
+
+    if (passouMeiaNoite(horas.entrada, horas.intervalo)) {
+      dias.intervalo = 1;
+    }
+
+    if (
+      passouMeiaNoite(
+        horas.intervalo || horas.entrada,
+        horas.retorno
+      )
+    ) {
+      dias.retorno = 1;
+    }
+
+    const ultimaHora =
+      horas.retorno ||
+      horas.intervalo ||
+      horas.entrada;
+
+    if (passouMeiaNoite(ultimaHora, horas.saida)) {
+      dias.saida = 1;
+    }
+
     const novosIds = {
-      entrada_id: await atualizarOuCriar(entrada_id, "entrada", entrada),
+      entrada_id: await atualizarOuCriar(
+        entrada_id,
+        "entrada",
+        entrada,
+        dias.entrada
+      ),
+
       intervalo_inicio_id: await atualizarOuCriar(
         intervalo_inicio_id,
         "intervalo_inicio",
-        intervalo
+        intervalo,
+        dias.intervalo
       ),
+
       intervalo_fim_id: await atualizarOuCriar(
         intervalo_fim_id,
         "intervalo_fim",
-        retorno
+        retorno,
+        dias.retorno
       ),
-      saida_id: await atualizarOuCriar(saida_id, "saida", saida),
+
+      saida_id: await atualizarOuCriar(
+        saida_id,
+        "saida",
+        saida,
+        dias.saida
+      ),
     };
 
     await client.query(
@@ -845,10 +948,10 @@ exports.lancarHorarioPadraoMes = async (req, res) => {
           motivo: ajusteExistente[0].falta
             ? "Dia marcado como falta"
             : ajusteExistente[0].folga
-            ? "Dia marcado como folga"
-            : ajusteExistente[0].ferias
-            ? "Dia marcado como férias"
-            : "Dia marcado como falta justificada",
+              ? "Dia marcado como folga"
+              : ajusteExistente[0].ferias
+                ? "Dia marcado como férias"
+                : "Dia marcado como falta justificada",
         });
         continue;
       }

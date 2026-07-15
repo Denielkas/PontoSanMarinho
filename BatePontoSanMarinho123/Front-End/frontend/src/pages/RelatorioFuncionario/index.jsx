@@ -532,11 +532,18 @@ export default function RelatorioFuncionario() {
 
       <div className="relatorio-filtros">
         <Select
-          className="relatorio-select"
+          className="relatorio-select-funcionario"
+          classNamePrefix="funcionario-select"
           options={opcoesFuncionarios}
-          value={opcoesFuncionarios.find((o) => o.value === funcId)}
-          onChange={(opcao) => setFuncId(opcao ? opcao.value : "todos")}
-          placeholder="Digite o nome do funcionário..."
+          value={
+            opcoesFuncionarios.find(
+              (opcao) => opcao.value === String(funcId)
+            ) || opcoesFuncionarios[0]
+          }
+          onChange={(opcao) =>
+            setFuncId(opcao ? opcao.value : "todos")
+          }
+          placeholder="Pesquisar funcionário..."
           isSearchable
           isClearable
           noOptionsMessage={() => "Funcionário não encontrado"}

@@ -13,17 +13,26 @@
 
 .relatorio-filtros {
   display: flex;
+  align-items: stretch;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 25px;
 }
 
+/* Cada filtro fica com altura uniforme e sem ocupar espaço exagerado */
+.relatorio-filtros > * {
+  min-height: 56px;
+  box-sizing: border-box;
+}
+
 .relatorio-select {
-  flex: 1;
-  padding: 12px 16px;
+  flex: 1 1 150px;
+  min-width: 145px;
+  height: 56px;
+  padding: 12px 44px 12px 16px;
   border-radius: 10px;
   border: 2px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.08);
   color: #fff;
   font-size: 16px;
   outline: none;
@@ -33,7 +42,6 @@
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 20px;
-  padding-right: 45px;
 }
 
 .relatorio-select:focus {
@@ -48,6 +56,7 @@
 }
 
 .relatorio-btn {
+  min-height: 56px;
   padding: 12px 22px;
   background: #0d6efd;
   color: #fff;
@@ -57,6 +66,8 @@
   font-size: 16px;
   cursor: pointer;
   transition: 0.2s ease;
+  white-space: nowrap;
+  flex: 0 1 auto;
 }
 
 .relatorio-btn:hover {
@@ -727,6 +738,128 @@
   background: #b91c1c;
 }
 
+
+/* =========================================
+   SELECT PESQUISÁVEL DE FUNCIONÁRIOS
+========================================= */
+
+.relatorio-select-funcionario {
+  flex: 1 1 300px;
+  min-width: 280px;
+  max-width: 380px;
+  height: 56px;
+}
+
+/* Caixa principal do react-select */
+.funcionario-select__control {
+  width: 100% !important;
+  min-height: 56px !important;
+  height: 56px !important;
+  padding: 0 6px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 2px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.funcionario-select__control:hover {
+  border-color: rgba(13, 110, 253, 0.75) !important;
+}
+
+.funcionario-select__control--is-focused {
+  border-color: #0d6efd !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 0 6px rgba(13, 110, 253, 0.55) !important;
+}
+
+.funcionario-select__value-container {
+  height: 52px !important;
+  padding: 0 8px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.funcionario-select__single-value {
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  max-width: calc(100% - 8px) !important;
+}
+
+.funcionario-select__placeholder {
+  color: rgba(255, 255, 255, 0.72) !important;
+  font-size: 15px !important;
+}
+
+.funcionario-select__input-container {
+  color: #ffffff !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.funcionario-select__input {
+  color: #ffffff !important;
+}
+
+.funcionario-select__indicators {
+  height: 52px !important;
+}
+
+.funcionario-select__indicator-separator {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.funcionario-select__dropdown-indicator,
+.funcionario-select__clear-indicator {
+  color: #0d6efd !important;
+  padding: 7px !important;
+}
+
+.funcionario-select__dropdown-indicator:hover,
+.funcionario-select__clear-indicator:hover {
+  color: #60a5fa !important;
+}
+
+.funcionario-select__menu {
+  margin-top: 6px !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  z-index: 99999 !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+.funcionario-select__menu-list {
+  padding: 5px !important;
+  max-height: 260px !important;
+}
+
+.funcionario-select__option {
+  padding: 11px 13px !important;
+  border-radius: 7px !important;
+  color: #e2e8f0 !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  font-size: 15px !important;
+}
+
+.funcionario-select__option--is-focused {
+  background: rgba(13, 110, 253, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.funcionario-select__option--is-selected {
+  background: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+.funcionario-select__no-options-message {
+  color: #cbd5e1 !important;
+}
+
+
 @media (max-width: 900px) {
   .acoes-dia-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -740,6 +873,15 @@
 @media (max-width: 768px) {
   .relatorio-filtros {
     flex-direction: column;
+  }
+
+  .relatorio-select-funcionario,
+  .relatorio-select,
+  .relatorio-btn {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    flex: none;
   }
 
   .modalGrid {

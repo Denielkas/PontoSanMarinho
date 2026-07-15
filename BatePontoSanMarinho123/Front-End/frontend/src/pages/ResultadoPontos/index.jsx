@@ -193,10 +193,10 @@ export default function ResultadoPontos() {
     }
 
     const linhas = [];
+
     if (linhaTemDados(linhaPrincipal)) {
       linhas.push(linhaPrincipal);
     }
-    linhas.push(...linhasExtras);
 
     return linhas;
   }

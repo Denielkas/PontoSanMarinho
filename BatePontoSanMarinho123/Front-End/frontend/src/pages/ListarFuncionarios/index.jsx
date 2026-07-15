@@ -137,10 +137,16 @@ export default function ListarFuncionarios() {
 
   const abrirModalAcoes = (f) => {
     setFuncionarioAcoes(f);
+
+    // trava a rolagem da página
+    document.body.style.overflow = "hidden";
+
     setAcoesModalOpen(true);
   };
 
   const fecharModalAcoes = () => {
+    document.body.style.overflow = "";
+
     setAcoesModalOpen(false);
     setFuncionarioAcoes(null);
   };

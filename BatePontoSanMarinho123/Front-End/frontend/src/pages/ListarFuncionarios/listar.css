@@ -223,26 +223,45 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  width: 100vw;
+  height: 100vh;
+
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+
   padding: 20px;
-  z-index: 9999;
+  box-sizing: border-box;
+
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+
+  z-index: 99999;
+  overflow-y: auto;
 }
 
 /* ============================
    MODAL — CARD
 ============================ */
 .modal-card {
+  position: relative;
+
   width: min(650px, 95vw);
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  margin: auto;
+
   background: #1a1a1a;
   padding: 28px;
   border-radius: 14px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+
   display: flex;
   flex-direction: column;
   gap: 22px;
+
   color: #fff;
 }
 
@@ -255,8 +274,10 @@
 }
 
 .modal-acoes-card {
-  width: min(420px, 95vw);
-  gap: 18px;
+  width: min(460px, 94vw);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  margin: auto;
 }
 
 .modal-acoes-topo {

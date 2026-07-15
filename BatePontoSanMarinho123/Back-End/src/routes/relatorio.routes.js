@@ -278,7 +278,76 @@ function formulaDiaSemanaExcel(rowNumber) {
 }
 
 function formulaHDia(rowNumber) {
-  return `IFERROR(IF(AND(C${rowNumber}="",D${rowNumber}="",E${rowNumber}="",F${rowNumber}=""),"",IF((IF(OR(C${rowNumber}="",D${rowNumber}=""),0,IF(D${rowNumber}<C${rowNumber},1-C${rowNumber}+D${rowNumber},D${rowNumber}-C${rowNumber}))+IF(OR(E${rowNumber}="",F${rowNumber}=""),0,IF(F${rowNumber}<E${rowNumber},1-E${rowNumber}+F${rowNumber},F${rowNumber}-E${rowNumber})))=0,"",(IF(OR(C${rowNumber}="",D${rowNumber}=""),0,IF(D${rowNumber}<C${rowNumber},1-C${rowNumber}+D${rowNumber},D${rowNumber}-C${rowNumber}))+IF(OR(E${rowNumber}="",F${rowNumber}=""),0,IF(F${rowNumber}<E${rowNumber},1-E${rowNumber}+F${rowNumber},F${rowNumber}-E${rowNumber}))))),"")`;
+  return `IFERROR(
+    IF(
+      AND(
+        C${rowNumber}="",
+        D${rowNumber}="",
+        E${rowNumber}="",
+        F${rowNumber}=""
+      ),
+      "",
+      IF(
+        AND(
+          C${rowNumber}<>"",
+          F${rowNumber}<>"",
+          D${rowNumber}="",
+          E${rowNumber}=""
+        ),
+        IF(
+          F${rowNumber}<C${rowNumber},
+          1-C${rowNumber}+F${rowNumber},
+          F${rowNumber}-C${rowNumber}
+        ),
+        IF(
+          (
+            IF(
+              OR(C${rowNumber}="",D${rowNumber}=""),
+              0,
+              IF(
+                D${rowNumber}<C${rowNumber},
+                1-C${rowNumber}+D${rowNumber},
+                D${rowNumber}-C${rowNumber}
+              )
+            )
+            +
+            IF(
+              OR(E${rowNumber}="",F${rowNumber}=""),
+              0,
+              IF(
+                F${rowNumber}<E${rowNumber},
+                1-E${rowNumber}+F${rowNumber},
+                F${rowNumber}-E${rowNumber}
+              )
+            )
+          )=0,
+          "",
+          (
+            IF(
+              OR(C${rowNumber}="",D${rowNumber}=""),
+              0,
+              IF(
+                D${rowNumber}<C${rowNumber},
+                1-C${rowNumber}+D${rowNumber},
+                D${rowNumber}-C${rowNumber}
+              )
+            )
+            +
+            IF(
+              OR(E${rowNumber}="",F${rowNumber}=""),
+              0,
+              IF(
+                F${rowNumber}<E${rowNumber},
+                1-E${rowNumber}+F${rowNumber},
+                F${rowNumber}-E${rowNumber}
+              )
+            )
+          )
+        )
+      )
+    ),
+    ""
+  )`;
 }
 
 function formulaAtraso(rowNumber) {

@@ -42,7 +42,12 @@ async function garantirTabelaFuncionarios() {
   await pool.query(`
   ALTER TABLE funcionarios
   ADD COLUMN IF NOT EXISTS inativado_em TIMESTAMP
-`);;
+`);
+
+  await pool.query(`
+  ALTER TABLE funcionarios
+  ADD COLUMN IF NOT EXISTS cnpj_empresa VARCHAR(14)
+`);
 }
 
 /* =========================================
@@ -313,6 +318,8 @@ exports.criar = async (req, res) => {
 ========================================= */
 exports.atualizar = async (req, res) => {
   try {
+    await garantirTabelas();
+
     const id = Number(req.params.id);
 
     if (!id) {
@@ -328,12 +335,24 @@ exports.atualizar = async (req, res) => {
       saida,
       funcao_id,
       funcao_nome,
+      cnpj_empresa,
     } = req.body;
 
     cpf = onlyDigits(cpf);
 
     if (funcao_nome) {
       funcao_id = await findOrCreateFuncao(funcao_nome);
+    }
+
+    const cnpjsPermitidos = [
+      "52830136000122",
+      "60871302000167",
+    ];
+
+    if (!cnpjsPermitidos.includes(cnpj_empresa)) {
+      return res.status(400).json({
+        error: "Selecione uma empresa válida.",
+      });
     }
 
     await pool.query(
@@ -346,10 +365,21 @@ exports.atualizar = async (req, res) => {
           intervalo_fim=$5,
           saida=$6,
           funcao_id=$7,
+          cnpj_empresa=$8,
           updated_at=NOW()
-      WHERE id=$8
+      WHERE id=$9
       `,
-      [nome, cpf, chegada, intervalo_inicio, intervalo_fim, saida, funcao_id, id]
+      [
+        nome,
+        cpf,
+        chegada || null,
+        intervalo_inicio || null,
+        intervalo_fim || null,
+        saida || null,
+        funcao_id || null,
+        cnpj_empresa,
+        id,
+      ]
     );
 
     return res.json({ ok: true });

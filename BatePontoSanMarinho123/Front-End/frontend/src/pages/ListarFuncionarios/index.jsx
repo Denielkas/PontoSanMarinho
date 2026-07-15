@@ -59,6 +59,7 @@ export default function ListarFuncionarios() {
     saida: "",
     funcao_id: "",
     funcao_nome: "",
+    cnpj_empresa: "",
   });
 
   const listaFiltrada = useMemo(() => {
@@ -126,6 +127,7 @@ export default function ListarFuncionarios() {
       saida: (f.saida || "").slice(0, 5),
       funcao_id: f.funcao_id ? String(f.funcao_id) : "",
       funcao_nome: "",
+      cnpj_empresa: f.cnpj_empresa || "",
     });
 
     setOpen(true);
@@ -173,6 +175,11 @@ export default function ListarFuncionarios() {
   const salvarAlteracoes = async () => {
     if (!editing) return;
 
+    if (!form.cnpj_empresa) {
+      alert("Selecione a empresa do funcionário.");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -183,11 +190,18 @@ export default function ListarFuncionarios() {
         intervalo_inicio: form.intervalo_inicio,
         intervalo_fim: form.intervalo_fim,
         saida: form.saida,
+
         funcao_id:
           form.funcao_id === "outro" || !form.funcao_id
             ? null
             : Number(form.funcao_id),
-        funcao_nome: form.funcao_id === "outro" ? form.funcao_nome : null,
+
+        funcao_nome:
+          form.funcao_id === "outro"
+            ? form.funcao_nome
+            : null,
+
+        cnpj_empresa: form.cnpj_empresa,
       };
 
       await api.put(`/funcionarios/${editing.id}`, payload);
@@ -327,7 +341,7 @@ export default function ListarFuncionarios() {
               <th>Intervalo início</th>
               <th>Intervalo fim</th>
               <th>Saída</th>
-              <th>Criado em</th>
+              <th>CNPJ</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -344,7 +358,13 @@ export default function ListarFuncionarios() {
                   <td>{f.intervalo_inicio?.slice(0, 5)}</td>
                   <td>{f.intervalo_fim?.slice(0, 5)}</td>
                   <td>{f.saida?.slice(0, 5)}</td>
-                  <td>{new Date(f.created_at).toLocaleString()}</td>
+                  <td>
+                    {f.cnpj_empresa === "52830136000122"
+                      ? "22"
+                      : f.cnpj_empresa === "60871302000167"
+                        ? "67"
+                        : "—"}
+                  </td>
 
                   <td className="acoesCell">
                     <button
@@ -615,6 +635,40 @@ export default function ListarFuncionarios() {
                     value={form.saida}
                     onChange={onChange}
                   />
+                </div>
+
+                <div className="cnpjEmpresaBox">
+                  <label className="cnpjTitulo">Empresa / CNPJ</label>
+
+                  <label className="cnpjOpcao">
+                    <input
+                      type="radio"
+                      name="cnpj_empresa"
+                      value="52830136000122"
+                      checked={form.cnpj_empresa === "52830136000122"}
+                      onChange={onChange}
+                    />
+
+                    <span>
+                      <strong>SM MARINHO LTDA</strong>
+                      <small>52.830.136/0001-22</small>
+                    </span>
+                  </label>
+
+                  <label className="cnpjOpcao">
+                    <input
+                      type="radio"
+                      name="cnpj_empresa"
+                      value="60871302000167"
+                      checked={form.cnpj_empresa === "60871302000167"}
+                      onChange={onChange}
+                    />
+
+                    <span>
+                      <strong>SAN MARINHO HOTEL LTDA</strong>
+                      <small>60.871.302/0001-67</small>
+                    </span>
+                  </label>
                 </div>
               </div>
 

@@ -575,3 +575,71 @@
   background: #6d28d9;
   transform: translateY(-1px);
 }
+
+.cnpjEmpresaBox {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.cnpjTitulo {
+  margin-bottom: 2px !important;
+  color: #d1d5db;
+  font-weight: 700;
+}
+
+.cnpjOpcao {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+  padding: 12px 14px;
+  margin: 0 !important;
+  box-sizing: border-box;
+
+  border: 2px solid #3a3a3a;
+  border-radius: 10px;
+  background: #262626;
+
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cnpjOpcao:hover {
+  border-color: #0d6efd;
+}
+
+.cnpjOpcao:has(input:checked) {
+  border-color: #0d6efd;
+  background: rgba(13, 110, 253, 0.12);
+}
+
+.modal-card .cnpjOpcao input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+
+  flex-shrink: 0;
+  accent-color: #0d6efd;
+  box-shadow: none;
+}
+
+.cnpjOpcao span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cnpjOpcao strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.cnpjOpcao small {
+  color: #bfc5ce;
+  font-size: 13px;
+}

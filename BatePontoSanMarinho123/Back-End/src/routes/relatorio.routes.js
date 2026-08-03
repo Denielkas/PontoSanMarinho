@@ -285,7 +285,15 @@ function formulaAtraso(rowNumber) {
   return `IFERROR(IF(OR(A${rowNumber}="",C${rowNumber}="",G${rowNumber}=""),"",IF((VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber})<=0,"",VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE)-G${rowNumber})),"")`;
 }
 
-function formulaHoraExtra(rowNumber) {
+function formulaHoraExtra(rowNumber, funcionario) {
+  const nome = String(funcionario.nome || "")
+    .trim()
+    .toUpperCase();
+
+  if (nome === "Deniel") {
+    return `IFERROR(IF(OR(A${rowNumber}="",C${rowNumber}="",G${rowNumber}=""),"",IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<=0,"",G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))),"")`;
+  }
+
   return `IFERROR(IF(OR(A${rowNumber}="",C${rowNumber}="",G${rowNumber}=""),"",IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<=TIME(0,15,0),"",G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))),"")`;
 }
 
@@ -842,7 +850,7 @@ function criarTabelaExcelFuncionario(ws, funcionario, dados, mes, ano) {
       };
 
       row.getCell(9).value = {
-        formula: formulaHoraExtra(rowIndex),
+        formula: formulaHoraExtra(rowIndex, funcionario),
       };
     }
 

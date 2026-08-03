@@ -278,7 +278,26 @@ function formulaDiaSemanaExcel(rowNumber) {
 }
 
 function formulaHDia(rowNumber) {
-  return `IFERROR(IF(AND(C${rowNumber}<>"",D${rowNumber}<>"",E${rowNumber}<>"",F${rowNumber}<>""),IF(D${rowNumber}<C${rowNumber},1-C${rowNumber}+D${rowNumber},D${rowNumber}-C${rowNumber})+IF(F${rowNumber}<E${rowNumber},1-E${rowNumber}+F${rowNumber},F${rowNumber}-E${rowNumber}),IF(AND(C${rowNumber}<>"",D${rowNumber}="",E${rowNumber}="",F${rowNumber}<>""),IF(F${rowNumber}<C${rowNumber},1-C${rowNumber}+F${rowNumber},F${rowNumber}-C${rowNumber}),"")),"")`;
+  return `IFERROR(
+    IF(
+      AND(C${rowNumber}<>"",D${rowNumber}<>"",E${rowNumber}<>"",F${rowNumber}<>""),
+      IF(D${rowNumber}<C${rowNumber},1-C${rowNumber}+D${rowNumber},D${rowNumber}-C${rowNumber})
+      +
+      IF(F${rowNumber}<E${rowNumber},1-E${rowNumber}+F${rowNumber},F${rowNumber}-E${rowNumber}),
+
+      IF(
+        AND(C${rowNumber}<>"",D${rowNumber}<>"",E${rowNumber}="",F${rowNumber}=""),
+        IF(D${rowNumber}<C${rowNumber},1-C${rowNumber}+D${rowNumber},D${rowNumber}-C${rowNumber}),
+
+        IF(
+          AND(C${rowNumber}<>"",D${rowNumber}="",E${rowNumber}="",F${rowNumber}<>""),
+          IF(F${rowNumber}<C${rowNumber},1-C${rowNumber}+F${rowNumber},F${rowNumber}-C${rowNumber}),
+          ""
+        )
+      )
+    ),
+    ""
+  )`.replace(/\s+/g, " ");
 }
 
 function formulaAtraso(rowNumber) {

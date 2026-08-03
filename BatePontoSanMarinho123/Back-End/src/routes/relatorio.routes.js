@@ -290,7 +290,7 @@ function formulaHoraExtra(rowNumber, funcionario) {
     .trim()
     .toUpperCase();
 
-  if (nome === "Deniel") {
+  if (nome === "DENIEL") {
     return `IFERROR(IF(OR(A${rowNumber}="",C${rowNumber}="",G${rowNumber}=""),"",IF((G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))<=0,"",G${rowNumber}-VLOOKUP(B${rowNumber},$L$6:$M$13,2,FALSE))),"")`;
   }
 
